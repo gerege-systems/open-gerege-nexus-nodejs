@@ -1,0 +1,34 @@
+{
+  "id": "io.example.esign",
+  "name": "PDF E-Sign",
+  "version": "2.0.0",
+  "platform": ">=0.1.0 <2.0.0",
+  "dependencies": [],
+  "permissions": [
+    {
+      "code": "esign.read",
+      "name": "View E-Sign Documents",
+      "description": "Allows viewing uploaded and signed PDF documents and the signature log"
+    },
+    {
+      "code": "esign.sign",
+      "name": "Sign Documents",
+      "description": "Allows signing PDF documents with eID Mongolia (PIN2) or the Gerege eSign HSM"
+    },
+    {
+      "code": "esign.manage",
+      "name": "Manage E-Sign",
+      "description": "Allows uploading documents, running batches and configuring signing"
+    }
+  ],
+  "menus": [
+    {
+      "id": "esign",
+      "parent_id": "operations",
+      "label": "PDF E-Sign",
+      "path": "/esign",
+      "icon": "pen-tool",
+      "order": 55
+    }
+  ]
+}

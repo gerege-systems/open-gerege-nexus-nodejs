@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+vendor/
+
+# Build outputs
+.next/
+frontend/.next/
+out/
+frontend/out/
+backend/dist/
+dist/
+*.tsbuildinfo
+
+# Local environment overrides
+.env
+.env.local
+.env.*.local
+
+# OS / Editor files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Go / Binary outputs
+bin/
+tmp/
+*.exe
+*.dll
+*.so
+*.dylib
+*.node
+
+# Logs & Coverage
+*.log
+coverage.out
+coverage.html
