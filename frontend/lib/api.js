@@ -20,7 +20,7 @@ async function fetcher(url, options = {}) {
         let errMessage = "Request failed";
         try {
             const errData = await res.json();
-            errMessage = errData.error || errMessage;
+            errMessage = errData.error || errData.message || errMessage;
         }
         catch {
             // ignore
@@ -35,7 +35,13 @@ async function fetcher(url, options = {}) {
     if (res.status === 204) {
         return undefined;
     }
-    return res.json();
+    const payload = await res.json();
+    // Collection and CRUD endpoints consistently wrap their result in `data`.
+    // Keep authentication/status responses intact, but expose domain data in
+    // the shape consumed by pages so every caller does not reimplement this.
+    if (payload && Object.prototype.hasOwnProperty.call(payload, "data"))
+        return payload.data;
+    return payload;
 }
 export const APP_MENU_CHANGED_EVENT = "gerege:app-menu-changed";
 async function mutateApp(url) {

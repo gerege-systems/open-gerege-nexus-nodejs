@@ -19,7 +19,7 @@ export default function AppStorePage() {
     const loadApps = async () => {
         try {
             const data = await api.getStoreApps();
-            setApps(data || []);
+            setApps(Array.isArray(data) ? data : []);
         }
         catch (err) {
             setMessage({ type: "error", text: err.message || t("app_store.message.load_failed") });
@@ -135,7 +135,7 @@ export default function AppStorePage() {
                 <p className="text-sm text-slate-600 mb-4 line-clamp-2">{app.description}</p>
 
                 {/* Dependencies info */}
-                {app.manifest.dependencies && app.manifest.dependencies.length > 0 && (<div className="mb-4 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                {app.manifest?.dependencies?.length > 0 && (<div className="mb-4 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                     <span className="font-semibold text-slate-700">{t("app_store.field.requires")}</span>
                     {app.manifest.dependencies.map((d) => d.id.replace("io.example.", "")).join(", ")}
                   </div>)}
