@@ -13,8 +13,8 @@ E-ID, ХУР / XYP)-тэй шууд холбогдох боломжтой, **м�
 зориулагдаагүй: дээр нь ажиллах модулиуд л тухайн байгууллагын хэрэгцээг
 тодорхойлно.
 
-Нэг Go бинари дотор модулиуд компиллогдож, тенант бүрт аль апп
-идэвхтэйг PostgreSQL дээрх апп стор шийднэ — сүлжээний нэмэлт дуудлагагүй,
+Node.js 22 LTS & Express.js дээр суурилсан хөнгөн авсаархан Модуль Монолит архитектур,
+тенант бүрт аль апп идэвхтэйг PostgreSQL дээрх апп стор шийднэ — сүлжээний нэмэлт дуудлагагүй,
 микросервисийн нарийн төвөгтэй байдалгүйгээр модуль хуваарилалт хийнэ.
 
 **Хэлний бодлого: монгол хэл + НҮБ-ын албан ёсны 6 хэл** — араб, хятад, англи,
@@ -40,7 +40,8 @@ E-ID, ХУР / XYP)-тэй шууд холбогдох боломжтой, **м�
 </p>
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8.svg)](https://go.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-22_LTS-green.svg)](https://nodejs.org)
+[![Express.js](https://img.shields.io/badge/Express-4.21-lightgrey.svg)](https://expressjs.com)
 [![Next.js](https://img.shields.io/badge/Next.js-15.1-black.svg)](https://nextjs.org)
 [![CI](https://github.com/gerege-systems/open-gerege-nexus/actions/workflows/ci.yml/badge.svg)](https://github.com/gerege-systems/open-gerege-nexus/actions/workflows/ci.yml)
 [![Security](https://github.com/gerege-systems/open-gerege-nexus/actions/workflows/security.yml/badge.svg)](https://github.com/gerege-systems/open-gerege-nexus/actions/workflows/security.yml)

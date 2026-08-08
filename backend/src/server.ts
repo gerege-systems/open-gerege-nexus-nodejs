@@ -19,6 +19,8 @@ import documentsRouter from './modules/documents/documents.router.js';
 import esignRouter from './modules/esign/esign.router.js';
 import govRouter from './modules/gov_services/gov_services.router.js';
 import aiRouter from './modules/ai/ai.router.js';
+import adminRouter from './modules/admin/admin.router.js';
+import integrationsRouter from './modules/integrations/integrations.router.js';
 
 const app = express();
 
@@ -67,6 +69,8 @@ apiV1.use(documentsRouter);
 apiV1.use(esignRouter);
 apiV1.use(govRouter);
 apiV1.use(aiRouter);
+apiV1.use(adminRouter);
+apiV1.use(integrationsRouter);
 
 app.use('/api/v1', apiV1);
 
