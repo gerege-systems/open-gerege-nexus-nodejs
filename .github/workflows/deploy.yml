@@ -36,7 +36,7 @@ jobs:
             dockerfile: deploy/Dockerfile
           - component: frontend
             context: ./frontend
-            dockerfile: Dockerfile
+            dockerfile: ./frontend/Dockerfile
     steps:
       - uses: actions/checkout@v4
         with:
