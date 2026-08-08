@@ -236,7 +236,7 @@ npm run dev
 
 ```bash
 # 后端单元测试（开启竞态检测）
-cd backend && go test -race ./...
+cd backend && npm test
 
 # 静态分析
 cd backend && go vet ./... && golangci-lint run

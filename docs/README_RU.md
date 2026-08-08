@@ -250,7 +250,7 @@ npm run dev
 
 ```bash
 # Модульные тесты backend с детектором гонок
-cd backend && go test -race ./...
+cd backend && npm test
 
 # Статический анализ
 cd backend && go vet ./... && golangci-lint run

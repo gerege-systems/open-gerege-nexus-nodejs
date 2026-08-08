@@ -290,7 +290,7 @@ Les jetons de session circulent soit dans le cookie HttpOnly, soit via
 
 ```bash
 # Tests unitaires backend avec le détecteur de courses
-cd backend && go test -race ./...
+cd backend && npm test
 
 # Analyse statique
 cd backend && go vet ./... && golangci-lint run

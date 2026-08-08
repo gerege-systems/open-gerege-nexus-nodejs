@@ -300,20 +300,9 @@ tenant foreign keys, the published-version immutability trigger, optimistic
 concurrency on `row_version`, idempotent ingestion and derived overdue.
 
 ```bash
-# State machine and routing (no database required)
-cd backend && go test ./internal/apps/gov_services/...
-
-# Full workflow against a migrated throwaway database
-docker run -d --name gov-test-db -e POSTGRES_PASSWORD=test -e POSTGRES_DB=govtest \
-  -p 55433:5432 postgres:16-alpine
-DATABASE_URL='postgres://postgres:test@localhost:55433/govtest?sslmode=disable' \
-  go run ./cmd/migrate up
-GOV_TEST_DATABASE_URL='postgres://postgres:test@localhost:55433/govtest?sslmode=disable' \
-  go test -race ./internal/apps/gov_services/...
+# Run unit and integration tests
+cd backend && npm test
 ```
-
-The integration tests skip when `GOV_TEST_DATABASE_URL` is unset, so `go test
-./...` stays green on a machine without a database.
 
 **CI runs them for real.** The `test` job starts a `postgres:16-alpine`
 service, migrates it with `cmd/migrate` and exports `GOV_TEST_DATABASE_URL`.

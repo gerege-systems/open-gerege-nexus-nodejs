@@ -11,7 +11,7 @@ infrastructure (DAN, E-ID, XYP / ХУР).
 systems, users and data meet. The platform itself is not tied to one sector —
 the modules running on it are what make a deployment specific.
 
-Modules compile into a single Go binary, while a PostgreSQL-backed app
+Modules run on a Node.js 22 LTS & Express.js (CommonJS) backend, while a PostgreSQL-backed app
 store decides which apps are active per tenant — module separation without the
 network hops or operational cost of microservices.
 
@@ -39,9 +39,9 @@ from **Settings → Appearance**. See the
 </p>
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](../LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8.svg)](https://go.dev)
-[![Next.js](https://img.shields.io/badge/Next.js-15.1-black.svg)](https://nextjs.org)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](../CONTRIBUTING.md)
+[![Node.js](https://img.shields.io/badge/Node.js-22_LTS-green.svg)](https://nodejs.org)
+[![Express.js](https://img.shields.io/badge/Express-4.21-lightgrey.svg)](https://expressjs.com)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black.svg)](https://nextjs.org)
 
 ---
 
@@ -74,28 +74,21 @@ from **Settings → Appearance**. See the
 
 ### 1. High-performance modular monolith
 
-- **Compile-time Go app modules** — `contacts`, `products`, `inventory`,
-  `billing`, `documents` and `developer_portal` compile into one binary and are
-  invoked in-process.
+- **Node.js Express app modules** — `contacts`, `products`, `inventory`,
+  `billing`, `documents`, `esign`, `gov_services` and `developer_portal` run as lightweight
+  Express routers in a single Node.js process.
 - **Per-tenant app store** — application entitlements, menus and RBAC are driven
   from PostgreSQL (`app_installations`).
-- **Dependency resolver** — recursive resolution over a directed acyclic graph
-  with cycle detection and semver constraint checking.
 - **Catalog sync** — `catalog/apps.json` is the single source of truth; the
   `apps` table is reconciled from it on every boot.
 
-### 2. Cloud-native resilience engine
+### 2. Pure Vanilla CSS Frontend Design System
 
-| Module | Purpose |
-| --- | --- |
-| `resilience/breaker.go` | Google SRE style adaptive circuit breaker |
-| `resilience/loadshedder.go` | Sheds load with `503` + `Retry-After` under pressure |
-| `resilience/singleflight.go` | Collapses duplicate in-flight work |
-| `resilience/retry.go` | Exponential backoff retry helper |
+- Zero Tailwind CSS dependencies. Custom CSS variables, light/dark themes, glassmorphism, responsive utilities, and micro-animations defined in `frontend/app/globals.css`.
 
 ### 3. National digital infrastructure
 
-- **XYP — State Information Exchange** (`platform/gerege/xyp.go`): citizen civil
+- **XYP — State Information Exchange** (`platform/gerege/xyp.js`): citizen civil
   registration (`WS100101`) and legal entity verification (`WS100201`).
 - **National E-ID and DAN** ([`developer.gerege.mn`](https://developer.gerege.mn),
   [`eidmongolia.mn`](https://eidmongolia.mn)) — PKI digital signature, mobile
@@ -286,20 +279,14 @@ Session tokens travel either in the HttpOnly cookie or as
 ## Testing and quality gates
 
 ```bash
-# Backend unit tests with the race detector
-cd backend && go test -race ./...
-
-# Static analysis
-cd backend && go vet ./... && golangci-lint run
-
-# Vulnerability scan
-cd backend && govulncheck ./...
+# Backend unit tests
+cd backend && npm test
 
 # Frontend build
 cd frontend && npm run build
 ```
 
-CI runs lint, tests, the frontend build, the Docker image build, govulncheck and
+CI runs tests and the frontend build on every push and pull request.
 gosec on every push and pull request.
 
 ---

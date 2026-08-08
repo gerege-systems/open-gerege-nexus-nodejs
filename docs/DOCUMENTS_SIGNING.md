@@ -435,11 +435,8 @@ tile нь тэгэхэд л зөв байна (шинээс эрэмбэлбэл
 ## 6. Тест
 
 ```bash
-# Нэгж тестүүд — DB шаардахгүй
-go test ./internal/apps/documents/
-
-# Бүрэн тестүүд — migration хийсэн хаяж болох DB шаардана
-DOCUMENTS_TEST_DATABASE_URL=postgres://... go test ./internal/apps/documents/
+# Нэгж тестүүд
+cd backend && npm test
 ```
 
 Integration тестүүд нь SQL дотор амьдардаг зүйлсийг барина: төлөвийн хамгаалалт,

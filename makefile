@@ -1,9 +1,9 @@
-.PHONY: dev-backend dev-frontend up down migrate seed test build
+.PHONY: dev-backend dev-frontend up down migrate test build
 
 DATABASE_URL ?= postgres://postgres:postgrespassword@localhost:5432/platform_db?sslmode=disable
 
 dev-backend:
-	cd backend && go run ./cmd/api
+	cd backend && npm run dev
 
 dev-frontend:
 	cd frontend && npm run dev
@@ -15,14 +15,10 @@ down:
 	docker-compose down -v
 
 migrate:
-	cd backend && DATABASE_URL="$(DATABASE_URL)" go run ./cmd/migrate up
-
-seed:
-	cd backend && DATABASE_URL="$(DATABASE_URL)" go run ./cmd/api
+	cd backend && npm run db:migrate
 
 test:
-	cd backend && go test ./...
+	cd backend && npm test
 
 build:
-	cd backend && go build ./...
 	cd frontend && npm run build

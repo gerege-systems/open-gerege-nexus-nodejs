@@ -338,7 +338,7 @@ npm run dev
 
 ```bash
 # اختبارات وحدات الواجهة الخلفية مع كاشف التسابق
-cd backend && go test -race ./...
+cd backend && npm test
 
 # التحليل الساكن
 cd backend && go vet ./... && golangci-lint run

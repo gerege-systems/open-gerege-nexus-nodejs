@@ -78,28 +78,22 @@ Node.js 22 LTS & Express.js дээр суурилсан хөнгөн авсаа�
 
 ### 1. Өндөр бүтээмжтэй модуль монолит архитектур
 
-- **Compile-time Go апп модулиуд** — модулиуд (`contacts`, `products`,
-  `inventory`, `billing`, `documents`, `developer_portal`) нэг бинарид
-  компиллогдож, процесс дотроо дуудагдана.
+### 1. Өндөр бүтээмжтэй модуль монолит архитектур
+
+- **Node.js Express апп модулиуд** — модулиуд (`contacts`, `products`,
+  `inventory`, `billing`, `documents`, `developer_portal`, `esign`, `gov_services`, `ai`) нь Express.js рутерууд хэлбэрээр нэг процесс дотор ажиллана.
 - **Тенант бүрийн апп стор** — тенант тус бүрийн апп эрх, меню, RBAC тохиргоо
-  PostgreSQL (`app_installations`) дээр динамикаар удирдагдана.
-- **Хамаарал шийдвэрлэх хөдөлгүүр** — DAG (Directed Acyclic Graph) дээр
-  тулгуурласан рекурсив шийдвэрлэлт, мөчлөг илрүүлэлт, semver шалгалт.
+  PostgreSQL (`app_installations`) болон Express `appGateMiddleware` дээр динамикаар удирдагдана.
 - **Каталог синк** — `catalog/apps.json` нь цорын ганц эх сурвалж; `apps`
   хүснэгт ачаалал бүрт үүнээс шинэчлэгдэнэ.
 
-### 2. Cloud-native тэсвэрлэлтийн хөдөлгүүр
+### 2. Pure Vanilla CSS Дизайн Систем
 
-| Модуль | Зориулалт |
-| --- | --- |
-| `resilience/breaker.go` | Google SRE загварын adaptive circuit breaker |
-| `resilience/loadshedder.go` | Ачаалал хэтэрсэн үед `503` + `Retry-After` |
-| `resilience/singleflight.go` | Давхардсан хүсэлтийг нэгтгэж кэшийн ачаалал бууруулах |
-| `resilience/retry.go` | Экспоненциал ухралттай давталт |
+- **Zero-Tailwind CSS** — Фронтенд дээр Tailwind CSS сангуудыг бүрэн хасаж, хөнгөн ажиллах Pure Vanilla CSS дизайн системийг (`frontend/app/globals.css`) хэрэгжүүлсэн.
 
 ### 3. Төрийн цахим дэд бүтцийн интеграци
 
-- **ХУР — Төрийн мэдээлэл солилцооны систем** (`platform/gerege/xyp.go`):
+- **ХУР — Төрийн мэдээлэл солилцооны систем** (`src/modules/integrations/integrations.router.js`):
   иргэний бүртгэл (`WS100101`), хуулийн этгээдийн баталгаажуулалт (`WS100201`).
 - **Үндэсний E-ID ба ДАН** ([`developer.gerege.mn`](https://developer.gerege.mn),
   [`eidmongolia.mn`](https://eidmongolia.mn)) — тоон гарын үсэг (PKI), нэг
@@ -107,23 +101,6 @@ Node.js 22 LTS & Express.js дээр суурилсан хөнгөн авсаа�
 - **Платформын өөрийн OAuth2 / OIDC provider**
   (`/.well-known/openid-configuration`) — гуравдагч системд client credentials
   урсгалаар токен олгоно.
-- **И-мэйл баталгаажуулалт** (`platform/emailverify`) — хаяг эзэмшлийг батлах
-  нэгдсэн урсгал: нэг удаа ажиллах холбоос, тенант тус бүрийн API клиент
-  түлхүүр, цагийн хязгаар, буцах хаягийн зөвшөөрлийн жагсаалт. Платформ доторх
-  апп модулиуд Go дуудлагаар, гадаад системүүд `POST /api/v1/verify/send`-ээр
-  ижил үйлчилгээг ашиглана. Тохиргоо → И-мэйл баталгаажуулалт дотор удирдана.
-
-> **Анхаар.** E-ID / ДАН / ХУР-ын mock горим зөвхөн хөгжүүлэлтийн орчинд
-> ажиллана. `ENVIRONMENT=production` үед mock горим автоматаар унтарч,
-> хуурамч иргэний мэдээллээр нэвтрэх боломжгүй болно.
-
-### 4. AI Copilot ба бизнес аналитик
-
-- **AI туслах** (`platform/ai/copilot.go`) — тенантын өгөгдлийн сангийн бодит
-  төлөвт холбогдсон, зорилго ангилдаг харилцан яриа.
-- **Агуулахын эрэлт таамаглагч** (`platform/ai/inventory_forecaster.go`) —
-  түүхэн хөдөлгөөнд тулгуурлан аюулгүйн үлдэгдэл ба дахин захиалгын цэгийг
-  санал болгоно.
 
 ---
 
@@ -139,23 +116,21 @@ Node.js 22 LTS & Express.js дээр суурилсан хөнгөн авсаа�
 | 6 | Developer Portal & OAuth2 SSO | `io.example.developer_portal` | `/developer/apps` | OAuth2 client апп бүртгэл |
 | 7 | PDF цахим гарын үсэг | `io.example.esign` | `/esign` | eID Mongolia (PIN2) хуулийн хүчин төгөлдөр цахим гарын үсэг, Gerege eSign HSM, багц баталгаажуулалт, гарын үсгийн лог |
 
-Апп бүр тенантад суулгагдаж идэвхжсэн үед л маршрутууд нээгдэнэ. Суулгаагүй апп
-руу хандвал `403 Forbidden` буцна.
-
 ---
 
 ## Төслийн бүтэц
 
 ```
 backend/
-  cmd/api/            HTTP API сервер (+ demo seeder)
-  cmd/migrate/        Goose миграцийн ажиллуулагч
+  src/
+    config/           Тохиргоо (env.js)
+    db/               PostgreSQL pool (index.js) ба SQL миграци (migrate.js)
+    middleware/       Auth, RBAC, RateLimit, Error хянагчууд
+    modules/          Бизнес модулиудын Express рутерууд
+    platform/         Апп каталогийн синк
+    server.js         Express серверийг асаах үндсэн файл
   db/migrations/      SQL миграцууд
-  internal/
-    module.go         Модулийн Go гэрээ (Module interface)
-    apps/             Бизнес модулиуд
-    platform/         Платформын цөм үйлчилгээнүүд
-frontend/             Next.js 15 (App Router) вэб клиент
+frontend/             Next.js 16 (App Router) + Pure Vanilla CSS
 catalog/              Апп сторын каталог ба manifest-ууд
 deploy/               Production Dockerfile, Nginx тохиргоо
 docs/                 Баримт бичиг ба орчуулгууд
@@ -167,8 +142,7 @@ docs/                 Баримт бичиг ба орчуулгууд
 
 ### Шаардлагатай програмууд
 
-- Go 1.25+
-- Node.js 20+
+- Node.js 22 LTS+
 - PostgreSQL 16+ (эсвэл Docker Compose)
 
 ### 1. Docker Compose (хамгийн хялбар)
@@ -177,25 +151,21 @@ docs/                 Баримт бичиг ба орчуулгууд
 docker compose up -d
 ```
 
-Миграц нь тусдаа `migrate` service-ээр автоматаар ажиллаж дуусмагц API асна.
-
 ### 2. Гараар ажиллуулах
 
 **Backend:**
 
 ```bash
 cd backend
-go mod download
-DATABASE_URL="postgres://postgres:postgrespassword@localhost:5432/platform_db?sslmode=disable" \
-  go run ./cmd/migrate up
-go run ./cmd/api
+npm install
+npm run dev
 ```
 
 **Frontend:**
 
 ```bash
 cd frontend
-npm ci
+npm install
 npm run dev
 ```
 
@@ -297,21 +267,14 @@ npm run dev
 ## Тест ба чанарын хяналт
 
 ```bash
-# Backend нэгж тестүүд (race detector-тэй)
-cd backend && go test -race ./...
-
-# Статик шинжилгээ
-cd backend && go vet ./... && golangci-lint run
-
-# Эмзэг байдлын шалгалт
-cd backend && govulncheck ./...
+# Backend нэгж тестүүд
+cd backend && npm test
 
 # Frontend build
 cd frontend && npm run build
 ```
 
-CI нь push ба pull request бүр дээр lint, тест, frontend build, Docker образ
-угсралт, govulncheck ба gosec шалгалтыг ажиллуулна.
+CI нь push ба pull request бүр дээр тест болон frontend build шалгалтыг ажиллуулна.
 
 ---
 

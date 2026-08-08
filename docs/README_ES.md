@@ -289,7 +289,7 @@ Los tokens de sesión viajan en la cookie HttpOnly o como
 
 ```bash
 # Pruebas unitarias del backend con el detector de carreras
-cd backend && go test -race ./...
+cd backend && npm test
 
 # Análisis estático
 cd backend && go vet ./... && golangci-lint run
