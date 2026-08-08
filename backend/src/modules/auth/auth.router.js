@@ -100,10 +100,16 @@ router.post('/auth/eid/start-id', startEidSession);
 
 // POST /api/v1/auth/eid/poll
 router.post('/auth/eid/poll', asyncHandler(async (req, res) => {
+  const tenant = await queryOne('SELECT id FROM tenants ORDER BY created_at ASC LIMIT 1');
   res.json({
     status: 'completed',
     state: 'COMPLETE',
-    token: jwt.sign({ sub: 'eid-user-id', email: 'citizen@mn.gov', role: 'user' }, env.JWT_SECRET),
+    token: jwt.sign({
+      sub: 'eid-user-id',
+      email: 'citizen@mn.gov',
+      role: 'user',
+      tenantId: tenant?.id,
+    }, env.JWT_SECRET),
   });
 }));
 
@@ -135,7 +141,12 @@ router.get('/auth/me', authMiddleware, asyncHandler(async (req, res) => {
 
 // GET /api/v1/menus (Protected)
 router.get('/menus', authMiddleware, asyncHandler(async (req, res) => {
-  const tenantId = req.tenantId || 'default-tenant';
+  const tenantId = req.tenantId;
+
+  if (!tenantId) {
+    res.json({ status: 'success', menus: [] });
+    return;
+  }
 
   const apps = await query(
     `SELECT a.id, a.slug, a.name, a.icon_url, a.category
@@ -145,13 +156,32 @@ router.get('/menus', authMiddleware, asyncHandler(async (req, res) => {
     [tenantId]
   );
 
-  const menus = apps.map((app) => ({
-    id: app.id,
-    title: app.name,
-    icon: app.icon_url || 'app',
-    path: `/${app.slug}`,
-    category: app.category,
-  }));
+  const menus = apps.flatMap((app, index) => {
+    const rootId = `${app.id}.root`;
+    const icon = app.icon_url || 'package';
+    return [
+      {
+        id: rootId,
+        app_id: app.id,
+        app_name: app.name,
+        label: app.name,
+        icon,
+        order: index * 10,
+        parent_id: null,
+        path: null,
+      },
+      {
+        id: `${app.id}.home`,
+        app_id: app.id,
+        app_name: app.name,
+        label: app.name,
+        icon,
+        order: index * 10 + 1,
+        parent_id: rootId,
+        path: `/${app.slug}`,
+      },
+    ];
+  });
 
   res.json({ status: 'success', menus });
 }));

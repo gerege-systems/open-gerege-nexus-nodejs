@@ -86,8 +86,8 @@ export const api = {
     },
     // permissions carries the effective grant of every role the member holds; it
     // is empty for administrators, who bypass the check.
-    getMe: () => fetcher("/auth/me"),
-    getMenus: () => fetcher("/menus"),
+    getMe: async () => (await fetcher("/auth/me")).user,
+    getMenus: async () => (await fetcher("/menus")).menus,
     // Odoo-style tenant access control
     getAccessOverview: () => fetcher("/admin/access/overview"),
     createRole: (data) => fetcher("/admin/access/roles", { method: "POST", body: JSON.stringify(data) }),
