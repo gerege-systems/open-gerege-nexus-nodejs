@@ -1,7 +1,6 @@
 # Architecture Specification
 
-System architecture, layering and technical decisions behind the
-**Gerege Nexus**.
+**Gerege Nexus** system architecture, layers, and technical decisions.
 
 <p>
   <a href="ARCHITECTURE_SPECIFICATION.md"><img src="assets/icons/flag-mn.png" width="18" height="18" alt=""> Монгол</a>
@@ -9,73 +8,47 @@ System architecture, layering and technical decisions behind the
   <img src="assets/icons/flag-en.png" width="18" height="18" alt=""> <b>English</b>
 </p>
 
-[Back to the documentation hub](README.md)
+[Back to Documentation Center](README_EN.md)
 
 ---
 
-## 1. System overview
+## 1. Overall System Architecture
 
-**Gerege Nexus** is a high-performance **modular monolith platform** that
-connects services, operations, systems, and data across public and private
-organizations, wired directly into Mongolia's national digital infrastructure.
+**Gerege Nexus** is a modular monolith platform built for high performance and deep integration with national digital infrastructure (DAN, E-ID, XYP).
 
-### 1.1 High-performance modular monolith
+### 1.1 Modular Monolith Core
 
-- **Zero-latency execution** — business modules (`contacts`, `products`,
-  `inventory`, `billing`, `documents`, `developer_portal`) implement the Go
-  `Module` contract and compile into a single binary.
-- **Tenant app store** — whether a module is active for a tenant is decided
-  dynamically from PostgreSQL (`app_installations`).
-- **DAG dependency resolution** — a directed acyclic graph plus semver
-  constraints resolve module dependencies without cycles.
-- **Catalog sync** — `catalog/apps.json` is the single source of truth and the
-  `apps` table is reconciled from it on every boot.
+- **Node.js 22 LTS & Express.js (CommonJS - CJS)** — Business modules (`contacts`, `products`, `inventory`, `billing`, `documents`, `developer_portal`, `esign`, `gov_services`, `ai`) are cleanly organized as Express routers without bloated frameworks or heavy ORMs.
+- **Native PostgreSQL Connection Pool** — Uses official `pg` (node-postgres) driver with parameterized raw queries for maximum throughput and low memory footprint.
+- **Tenant-Based App Store** — Dynamic module enablement per tenant controlled via PostgreSQL (`app_installations`) and Express `appGateMiddleware`.
+- **Catalog Synchronization** — `catalog/apps.json` acts as the single source of truth, synced to the `apps` database table on application boot.
 
-### 1.2 Cloud-native resilience (inspired by go-zero)
+### 1.2 Frontend & Styling
 
-- **Adaptive circuit breaker** (`resilience/breaker.go`) — Google SRE sliding
-  window error-rate rejection.
-- **Adaptive load shedding** (`resilience/loadshedder.go`) — returns
-  `503 Service Unavailable` once in-flight concurrency is exceeded.
-- **Singleflight coalescing** (`resilience/singleflight.go`) — collapses
-  duplicate queries and absorbs cache stampedes.
-- **Exponential backoff retry** (`resilience/retry.go`) — retries transient
-  failures.
-
-### 1.3 State data exchange and identity
-
-- **XYP state exchange** — citizen civil registration (`WS100101`) and legal
-  entity data (`WS100201`).
-- **DAN and E-ID** ([`eidmongolia.mn`](https://eidmongolia.mn),
-  [`developer.gerege.mn`](https://developer.gerege.mn)) — PKI digital signature,
-  mobile OTP, bank SSO and biometric face verification.
-- **OAuth2 / OIDC provider** (`/.well-known/openid-configuration`) — the
-  platform's own authorisation server.
-
-> Mock mode is a development convenience only; it is disabled automatically when
-> `ENVIRONMENT=production`.
+- **Next.js 16 (React 19)** — Ultra-fast App Router frontend.
+- **Pure Vanilla CSS Design System** — Zero Tailwind CSS overhead. Fully custom CSS custom properties (variables), light/dark themes, glassmorphism, responsive utilities, and micro-animations defined in `frontend/app/globals.css`.
 
 ---
 
-## 2. Architecture diagram
+## 2. System Architecture Diagram
 
 ```
 +-----------------------------------------------------------------------------------+
-|                              Gerege Nexus                             |
+|                              Gerege Nexus                                         |
 +-----------------------------------------------------------------------------------+
                                           |
                 +-------------------------+-------------------------+
                 |                                                   |
       +-------------------+                               +-------------------+
-      | Next.js 15 Client |                               |  Go 1.25 Backend  |
-      |   (App Router)    |                               |   (Chi Router)    |
+      | Next.js Client    |                               | Node.js Express   |
+      | (Pure Vanilla CSS)|                               | (CommonJS - CJS)  |
       +-------------------+                               +-------------------+
                 |                                                   |
         +-------+-------+                                   +-------+-------+
         |               |                                   |               |
 +---------------+ +---------------+                 +---------------+ +---------------+
-| AI Copilot UI | | E-ID / DAN    |                 | Cloud-Native  | | State Exchange|
-|  Drawer Panel | | SSO Provider  |                 | Resilience    | | (xyp.gerege)  |
+| AI Copilot UI | | E-ID / DAN    |                 | Express       | | State Exchange|
+|  Drawer Panel | | SSO Provider  |                 | Middlewares   | | (xyp.gerege)  |
 +---------------+ +---------------+                 +---------------+ +---------------+
                                                             |
                                                     +---------------+
@@ -83,54 +56,3 @@ organizations, wired directly into Mongolia's national digital infrastructure.
                                                     |  PostgreSQL   |
                                                     +---------------+
 ```
-
----
-
-## 3. Request pipeline
-
-1. **Shared middleware** — logging, panic recovery, load shedding, Prometheus
-   metrics, security headers, CORS.
-2. **Authentication** — the session token is read from the cookie or the
-   `Authorization: Bearer` header and resolved against the `sessions` table.
-   Only the SHA-256 digest of the token is stored.
-3. **Tenant context** — `tenant_id` is placed in the Go context and scopes every
-   query.
-4. **App gate** — each module route checks `app_installations`; an uninstalled
-   or disabled app returns `403 Forbidden`.
-5. **Module handler** — business logic and database transactions.
-
----
-
-## 4. Core data model
-
-| Table | Purpose |
-| --- | --- |
-| `tenants`, `users`, `memberships` | Multi-tenancy and user membership |
-| `roles`, `permissions`, `role_permissions`, `membership_roles` | RBAC model |
-| `sessions` | Server-side session tokens (SHA-256 digests) |
-| `apps`, `app_versions`, `app_installations`, `installation_events` | App store and installation history |
-| `contacts`, `products`, `warehouses`, `stock_levels`, `stock_movements` | Core business data |
-| `billing_invoices`, `document_records` | Invoices and digital documents |
-| `oauth2_clients` | OAuth2 client applications |
-
-All schema changes go through goose migrations in `backend/db/migrations/`.
-Runtime DDL is not allowed.
-
----
-
-## 5. Architectural decisions
-
-| Decision | Rationale |
-| --- | --- |
-| Modular monolith over microservices | In-process calls avoid network latency; module boundaries are enforced by Go interfaces |
-| No ORM (`pgx` plus hand-written SQL) | Keeps queries explicit and tunable, avoids hidden N+1 |
-| Shared-schema multi-tenancy | Isolation via `tenant_id` without duplicating schemas |
-| Catalog file as source of truth | Adding an app needs no manual SQL; the `apps` table syncs automatically |
-| Opaque session tokens | Avoids the revocation problem of stateless JWTs |
-
----
-
-## 6. Maintainers
-
-- **Gerege Systems Development Team** ([@gerege-systems](https://github.com/gerege-systems))
-- **Gemini AI**, **Claude AI**

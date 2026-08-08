@@ -1,7 +1,6 @@
 # Архитектурын тодорхойлолт
 
-**Gerege Nexus**-ын систем архитектур, давхаргууд ба техникийн
-шийдвэрүүд.
+**Gerege Nexus**-ын систем архитектур, давхаргууд ба техникийн шийдвэрүүд.
 
 <p>
   <img src="assets/icons/flag-mn.png" width="18" height="18" alt=""> <b>Монгол</b>
@@ -15,45 +14,20 @@
 
 ## 1. Системийн ерөнхий архитектур
 
-**Gerege Nexus** нь өндөр бүтээмжтэй, Монгол Улсын цахим дэд бүтэцтэй нягт
-холбогдох боломжтой **модульт монолит платформ** — төрийн болон хувийн хэвшлийн
-байгууллагын үйлчилгээ, үйл ажиллагаа, систем, өгөгдлийг нэгтгэнэ.
+**Gerege Nexus** нь өндөр бүтээмжтэй, Монгол Улсын цахим дэд бүтэцтэй нягт холбогдох боломжтой **модульт монолит платформ** — төрийн болон хувийн хэвшлийн байгууллагын үйлчилгээ, үйл ажиллагаа, систем, өгөгдлийг нэгтгэнэ.
 
 ### 1.1 Өндөр бүтээмжтэй модуль монолит
 
-- **Zero-latency execution** — бизнес модулиуд (`contacts`, `products`,
-  `inventory`, `billing`, `documents`, `developer_portal`) нь Go хэлний `Module`
-  контрактыг хэрэгжүүлж, нэг бинарид компиллогдоно.
-- **Тенант бүрийн апп стор** — модуль тус бүр тенантад идэвхтэй эсэхийг
-  PostgreSQL (`app_installations`) динамикаар шийднэ.
-- **DAG хамаарал шийдвэрлэлт** — Directed Acyclic Graph ба semver ашиглан
-  модулийн хамаарлыг мөчлөг үүсгэхгүйгээр тооцоолно.
-- **Каталогийн синк** — `catalog/apps.json` цорын ганц эх сурвалж бөгөөд `apps`
-  хүснэгт ачаалал бүрт түүнээс шинэчлэгдэнэ.
+- **Node.js 22 LTS & Express.js (CommonJS - CJS)** — Бизнес модулиуд (`contacts`, `products`, `inventory`, `billing`, `documents`, `developer_portal`, `esign`, `gov_services`, `ai`) нь Express рутерууд хэлбэрээр цэвэр, хөнгөн байдлаар зохион байгуулагдсан.
+- **Хүчирхэг бааз ба Connection Pool** — `pg` (node-postgres) native connection pool ашиглан PostgreSQL өгөгдлийн сантай шууд харьцана. 
+- **Тенант бүрийн апп стор** — модуль тус бүр тенантад идэвхтэй эсэхийг PostgreSQL (`app_installations`) болон Express `appGateMiddleware` динамикаар шийднэ.
+- **Каталогийн синк** — `catalog/apps.json` цорын ганц эх сурвалж бөгөөд `apps` хүснэгт ачаалал бүрт түүнээс автоматаар шинэчлэгдэнэ.
 
-### 1.2 Cloud-native тэсвэрлэлт (go-zero-оос санаа авсан)
+### 1.2 Аюулгүй байдал ба Хөнгөн Тэсвэрлэлт
 
-- **Adaptive circuit breaker** (`resilience/breaker.go`) — Google SRE-ийн
-  гулсах цонхон дээрх алдааны харьцаагаар хүсэлтийг татгалзана.
-- **Adaptive load shedding** (`resilience/loadshedder.go`) — зэрэг ажиллах
-  хүсэлтийн тоо хэтэрвэл `503 Service Unavailable` буцаана.
-- **Singleflight coalescing** (`resilience/singleflight.go`) — давхардсан
-  асуулгыг нэгтгэж, кэш нурах үеийн ачааллыг бууруулна.
-- **Exponential backoff retry** (`resilience/retry.go`) — түр зуурын алдаанд
-  давтан оролдоно.
-
-### 1.3 Төрийн мэдээлэл солилцоо ба танилт нэвтрэлт
-
-- **ХУР систем** — иргэний бүртгэл (`WS100101`), хуулийн этгээдийн мэдээлэл
-  (`WS100201`).
-- **ДАН ба E-ID** ([`eidmongolia.mn`](https://eidmongolia.mn),
-  [`developer.gerege.mn`](https://developer.gerege.mn)) — тоон гарын үсэг, Mobile OTP,
-  банкны SSO, царай танилт.
-- **OAuth2 / OIDC provider** (`/.well-known/openid-configuration`) — платформын
-  өөрийн бие даасан танилтын сервер.
-
-> Mock горим нь зөвхөн хөгжүүлэлтийн орчинд ажиллана. `ENVIRONMENT=production`
-> үед автоматаар унтарна.
+- **Zero-Dependency Rate Limiting** (`src/middleware/rateLimit.js`) — IP-д суурилсан санах ойн хөнгөн rate limiter.
+- **Auth & Session Store** (`src/middleware/auth.middleware.js`) — JWT болон PostgreSQL дээрх Session токен шалгагч.
+- **Pure Vanilla CSS Design System** — Фронтенд дээр ямар нэг Tailwind CSS ашиглахгүйгээр цэвэр CSS variables, theme switching (Light/Dark mode) болон хурдан ажиллах загварын системийг байгуулсан.
 
 ---
 
@@ -61,21 +35,21 @@
 
 ```
 +-----------------------------------------------------------------------------------+
-|                              Gerege Nexus                             |
+|                              Gerege Nexus                                         |
 +-----------------------------------------------------------------------------------+
                                           |
                 +-------------------------+-------------------------+
                 |                                                   |
       +-------------------+                               +-------------------+
-      | Next.js 15 Client |                               |  Go 1.25 Backend  |
-      |   (App Router)    |                               |   (Chi Router)    |
+      | Next.js Client    |                               | Node.js Express   |
+      | (Pure Vanilla CSS)|                               | (CommonJS - CJS)  |
       +-------------------+                               +-------------------+
                 |                                                   |
         +-------+-------+                                   +-------+-------+
         |               |                                   |               |
 +---------------+ +---------------+                 +---------------+ +---------------+
-| AI Copilot UI | | E-ID / DAN    |                 | Cloud-Native  | | State Exchange|
-|  Drawer Panel | | SSO Provider  |                 | Resilience    | | (xyp.gerege)  |
+| AI Copilot UI | | E-ID / DAN    |                 | Express       | | State Exchange|
+|  Drawer Panel | | SSO Provider  |                 | Middlewares   | | (xyp.gerege)  |
 +---------------+ +---------------+                 +---------------+ +---------------+
                                                             |
                                                     +---------------+
@@ -88,49 +62,8 @@
 
 ## 3. Хүсэлтийн урсгал
 
-1. **Дундын middleware** — логлолт, panic сэргээлт, load shedding, Prometheus
-   хэмжүүр, аюулгүй байдлын толгойнууд, CORS.
-2. **Танилт** — session токеныг cookie эсвэл `Authorization: Bearer` толгойгоос
-   уншиж, `sessions` хүснэгтээс шалгана. Токен нь өгөгдлийн санд SHA-256 хэш
-   хэлбэрээр хадгалагдана.
-3. **Тенантын контекст** — `tenant_id` нь Go context-д шингэж, бүх асуулга
-   түүгээр хязгаарлагдана.
-4. **Апп хаалт** — модулийн маршрут бүр `app_installations` дээрх төлөвөөр
-   шалгагдана; суулгаагүй бол `403 Forbidden`.
-5. **Модулийн handler** — бизнес логик, өгөгдлийн сангийн гүйлгээ.
-
----
-
-## 4. Өгөгдлийн загварын үндсэн хүснэгтүүд
-
-| Хүснэгт | Зориулалт |
-| --- | --- |
-| `tenants`, `users`, `memberships` | Олон тенант, хэрэглэгчийн харьяалал |
-| `roles`, `permissions`, `role_permissions`, `membership_roles` | RBAC эрхийн загвар |
-| `sessions` | Сервер талын session токен (SHA-256 хэш) |
-| `apps`, `app_versions`, `app_installations`, `installation_events` | Апп стор ба суулгалтын түүх |
-| `contacts`, `products`, `warehouses`, `stock_levels`, `stock_movements` | Үндсэн бизнес өгөгдөл |
-| `billing_invoices`, `document_records` | Нэхэмжлэх ба цахим баримт |
-| `oauth2_clients` | OAuth2 client аппликейшнүүд |
-
-Бүх схемийн өөрчлөлт `backend/db/migrations/` доторх goose миграцаар хийгдэнэ.
-Ажиллах үед DDL гүйцэтгэхийг хориглоно.
-
----
-
-## 5. Архитектурын шийдвэрүүд
-
-| Шийдвэр | Шалтгаан |
-| --- | --- |
-| Микросервис биш модуль монолит | Процесс доторх дуудлага нь сүлжээний хоцролтгүй; модулийн хил нь Go интерфейсээр хангагдана |
-| ORM ашиглахгүй (`pgx` + гар бичмэл SQL) | Асуулгыг тодорхой, оновчтой байлгах; далд N+1-ээс сэргийлэх |
-| Дундын схем (shared schema) олон тенант | Схем хуулбарлахгүйгээр `tenant_id`-аар тусгаарлана |
-| Каталог файл нь эх сурвалж | Апп нэмэхэд SQL гараар бичихгүй; `apps` хүснэгт автоматаар синк болно |
-| Opaque session токен | JWT-ийн цуцлах боломжгүй байдлаас зайлсхийж, шууд хүчингүй болгоно |
-
----
-
-## 6. Хариуцагчид
-
-- **Gerege Systems Development Team** ([@gerege-systems](https://github.com/gerege-systems))
-- **Gemini AI**, **Claude AI**
+1. **Дундын middleware** — Helmet аюулгүй байдлын header-үүд, CORS, асинхрон алдаа баригч `asyncHandler`, хүсэлтийн логлолт.
+2. **Танилт** — Session токеныг cookie эсвэл `Authorization: Bearer` толгойгоос уншиж шалгана.
+3. **Тенантын контекст** — `tenant_id` нь request-д шингэж, бүх асуулга түүгээр хязгаарлагдана.
+4. **Апп хаалт** — Модулийн маршрут бүр `appGateMiddleware` дээр `app_installations` хүснэгтийн төлөвөөр шалгагдана; суулгаагүй бол `403 Forbidden`.
+5. **Модулийн controller/router** — Бизнес логик, өгөгдлийн сангийн гүйлгээ.
