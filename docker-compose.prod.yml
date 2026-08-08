@@ -27,7 +27,7 @@ services:
     image: ${IMAGE_BACKEND}:${IMAGE_TAG:-latest}
     container_name: js_gerege_nexus_backend
     restart: unless-stopped
-    pull_policy: always
+
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-js_postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-js_platform_db}?sslmode=disable
       PORT: 8080
@@ -60,7 +60,7 @@ services:
     image: ${IMAGE_FRONTEND}:${IMAGE_TAG:-latest}
     container_name: js_gerege_nexus_frontend
     restart: unless-stopped
-    pull_policy: always
+
     ports:
       - "127.0.0.1:3010:3000"
     depends_on:
