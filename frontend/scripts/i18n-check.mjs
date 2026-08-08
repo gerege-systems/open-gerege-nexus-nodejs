@@ -27,7 +27,7 @@ const I18N = path.join(HERE, "..", "lib", "i18n");
 const OVERLAYS = ["ar", "zh", "fr", "ru", "es"];
 
 /**
- * Reads a dictionary module without a TypeScript loader — the same trick
+ * Reads a dictionary module without a JavaScript module loader — the same trick
  * scripts/i18n-translate.mjs uses. These files are `export const x = {...}`
  * where every value is a literal: data, not code.
  */
@@ -39,9 +39,9 @@ async function loadModule(file) {
   return Function(`"use strict"; return (${src.slice(start, end + 1)});`)();
 }
 
-const files = [path.join(I18N, "base.ts"), path.join(I18N, "web.ts")];
+const files = [path.join(I18N, "base.js"), path.join(I18N, "web.js")];
 for (const f of (await readdir(path.join(I18N, "addons"))).sort()) {
-  if (f.endsWith(".ts")) files.push(path.join(I18N, "addons", f));
+  if (f.endsWith(".js")) files.push(path.join(I18N, "addons", f));
 }
 
 const dictionary = {};
@@ -61,7 +61,7 @@ for (const [key, entry] of Object.entries(dictionary)) {
 }
 
 for (const locale of OVERLAYS) {
-  const overlay = await loadModule(path.join(I18N, "locales", `${locale}.ts`));
+  const overlay = await loadModule(path.join(I18N, "locales", `${locale}.js`));
   const orphaned = Object.keys(overlay).filter((k) => !(k in dictionary));
   const untranslated = keys.filter((k) => !overlay[k]);
 

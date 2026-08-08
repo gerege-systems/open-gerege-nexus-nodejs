@@ -112,7 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   open. Uploads are now checked for a trailer as well as a header.
 - **Sidebar sub-menus rendered as identical grey boxes**: the icons named by the
   server's menu blueprints were never mapped in the frontend
-  ([`Layout.tsx`](frontend/components/Layout.tsx)).
+  ([`Layout.jsx`](frontend/components/Layout.jsx)).
 
 ### Added
 

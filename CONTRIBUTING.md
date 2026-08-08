@@ -71,6 +71,6 @@
 1. `backend/src/modules/<module_name>/` дор Express рутер үүсгэнэ.
 2. `backend/src/server.js` дээр рутерээ бүртгэнэ.
 3. `catalog/manifests/<slug>.json` manifest файл болон `catalog/apps.json` мета датаг шинэчилнэ.
-4. `frontend/app/<module_name>/page.tsx` дор дэлгэц нэмнэ.
+4. `frontend/app/<module_name>/page.jsx` дор дэлгэц нэмнэ.
 
 Дэлгэрэнгүйг [Модуль хөгжүүлэх заавар](docs/MODULE_AUTHORING_GUIDE.md)-аас үзнэ үү.

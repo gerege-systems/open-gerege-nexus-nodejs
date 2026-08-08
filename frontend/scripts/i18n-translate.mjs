@@ -3,7 +3,7 @@
  * Fills a language overlay from the mn/en dictionary using Gemini.
  *
  *   npm run i18n:translate -- --locale fr            # show what would change
- *   npm run i18n:translate -- --locale fr --write    # write lib/i18n/locales/fr.ts
+ *   npm run i18n:translate -- --locale fr --write    # write lib/i18n/locales/fr.js
  *
  * The platform already talks to Gemini for the copilot and the translate panel;
  * this is the same model applied to the interface itself, at build time rather
@@ -53,7 +53,7 @@ function arg(name, fallback = null) {
 }
 
 /**
- * Reads a dictionary module without a TypeScript loader.
+ * Reads a dictionary module without importing it into this process.
  *
  * These files are `export const x = { ... }` where every value is a string
  * literal — data, not code. Stripping the export and evaluating the literal is
@@ -69,9 +69,9 @@ async function loadModule(file) {
 }
 
 async function loadDictionary() {
-  const files = [path.join(I18N, "base.ts"), path.join(I18N, "web.ts")];
+  const files = [path.join(I18N, "base.js"), path.join(I18N, "web.js")];
   for (const f of (await readdir(path.join(I18N, "addons"))).sort()) {
-    if (f.endsWith(".ts")) files.push(path.join(I18N, "addons", f));
+    if (f.endsWith(".js")) files.push(path.join(I18N, "addons", f));
   }
   const out = {};
   for (const f of files) Object.assign(out, await loadModule(f));
@@ -131,7 +131,7 @@ async function main() {
   }
 
   const dictionary = await loadDictionary();
-  const overlayFile = path.join(OVERLAY_DIR, `${locale}.ts`);
+  const overlayFile = path.join(OVERLAY_DIR, `${locale}.js`);
   const existing = existsSync(overlayFile) ? await loadModule(overlayFile) : {};
 
   let pending = Object.entries(dictionary).filter(([key]) => !existing[key]);

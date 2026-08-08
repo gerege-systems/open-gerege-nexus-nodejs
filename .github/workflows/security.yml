@@ -2,7 +2,7 @@ name: Security
 
 on:
   schedule:
-    - cron: "0 9 * * 1" # Every Monday at 9am UTC
+    - cron: "0 9 * * 1"
   push:
     branches: [main]
   pull_request:
@@ -12,43 +12,38 @@ permissions:
   contents: read
 
 jobs:
-  govulncheck:
-    name: Vulnerability Check
+  dependency-audit:
+    name: Dependency audit (${{ matrix.app }})
     runs-on: ubuntu-latest
-    # The Go module lives in backend/. Running from the repository root
-    # aborts with "go.mod file not found".
+    strategy:
+      matrix:
+        app: [backend, frontend]
     defaults:
       run:
-        working-directory: backend
+        working-directory: ${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-node@v4
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-      - name: Run govulncheck
-        continue-on-error: true
-        run: govulncheck ./...
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
-  gosec:
-    name: Static Security Scan
+  static-analysis:
+    name: JavaScript static analysis
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-node@v4
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-      # gosec catches a different class of issues than govulncheck:
-      # govulncheck reads vuln DB → flags vulnerable deps; gosec reads
-      # source → flags antipatterns (hardcoded creds, weak crypto,
-      # SQL injection patterns, unsafe file perms, etc.).
-      - name: Run gosec
-        uses: securego/gosec@master
-        with:
-          # G104 (errcheck) is noisy and golangci-lint already covers it.
-          # G404 (math/rand) is only used for circuit-breaker jitter — never
-          # for tokens or secrets, which use crypto/rand.
-          args: "-exclude=G104,G404 ./backend/..."
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint

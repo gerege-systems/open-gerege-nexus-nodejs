@@ -31,13 +31,13 @@ Gerege Nexus-ийн хэрэглэгчид харагдах бүх текст `f
 
 ```
 frontend/lib/i18n/
-  index.tsx          I18nProvider, useI18n, t(), хэлний бүртгэл
-  base.ts            Бүх дэлгэцийн хуваалцдаг нэр томьёо  (Odoo "base")
-  web.ts             Клиентийн бүрхүүл: цэс, толгой, хайлт (Odoo "web")
+  index.jsx          I18nProvider, useI18n, t(), хэлний бүртгэл
+  base.js            Бүх дэлгэцийн хуваалцдаг нэр томьёо  (Odoo "base")
+  web.js             Клиентийн бүрхүүл: цэс, толгой, хайлт (Odoo "web")
   addons/
-    access.ts  ai.ts  app_store.ts  appearance.ts  auth.ts
-    billing.ts contacts.ts developer.ts documents.ts esign.ts
-    gov.ts     integrations.ts inventory.ts products.ts website.ts
+    access.js  ai.js  app_store.js  appearance.js  auth.js
+    billing.js contacts.js developer.js documents.js esign.js
+    gov.js     integrations.js inventory.js products.js website.js
 ```
 
 App бүр өөрийн файлтай. Нэг л дэлгэц харуулдаг текст тухайн addon-д, хоёроос
@@ -68,8 +68,8 @@ Term нь техникийн нэр — **snake_case**, англи хэл дээ
 
 ## 3. Дүрмүүд
 
-**Хоёр хэл заавал.** Dictionary нь typed тул `mn` эсвэл `en` дутвал TypeScript
-compile алдаа өгнө. `npx tsc --noEmit` энэ шалгалтыг гүйцэтгэнэ.
+**Хоёр хэл заавал.** `mn` эсвэл `en` дутвал `node scripts/i18n-check.mjs`
+алдаа өгнө.
 
 **Давхардуулж болохгүй.** Нэг нэр томьёог хоёр модульд бүү тодорхойл. "Төлөв"
 бол `base.field.status` — `contacts.status`, `products.status` гэж дахин
@@ -88,7 +88,7 @@ compile алдаа өгнө. `npx tsc --noEmit` энэ шалгалтыг гүй
 
 ## 4. Хувьсагч дамжуулах
 
-```tsx
+```jsx
 t("base.message.page_of", { page: 2, total: 7 })   // "2 / 7 хуудас"
 t("access.message.confirm_delete", { name: role.name })
 ```
@@ -99,22 +99,20 @@ t("access.message.confirm_delete", { name: role.name })
 
 API-аас ирсэн утгаар түлхүүр угсрахдаа техникийн хэлбэрт нь буулгана:
 
-```tsx
+```jsx
 // API "AWAITING_VERIFICATION" илгээдэг, dictionary-д lower snake_case байдаг
-t(`gov.state.${status.toLowerCase()}` as never);
+t(`gov.state.${status.toLowerCase()}`);
 ```
 
-Ийм тохиолдолд `as never` шаардлагатай — TypeScript template literal-ыг
-түлхүүр гэж таних боломжгүй. Тиймээс энэ хэв маягийг зөвхөн бүх утга нь
-dictionary-д баттай байгаа үед хэрэглэнэ (`gov.state.*`, `gov.action.*`,
-`gov.menu.*`).
+Энэ хэв маягийг зөвхөн бүх утга нь dictionary-д баттай байгаа үед хэрэглэнэ
+(`gov.state.*`, `gov.action.*`, `gov.menu.*`).
 
 ## 6. Шинэ апп нэмэх үед
 
-1. `frontend/lib/i18n/addons/<app>.ts` файл үүсгэнэ.
-2. `export const <app> = { ... } as const;` гэж бичнэ.
-3. `index.tsx`-д import хийж `dictionary` дотор spread хийнэ.
-4. `npx tsc --noEmit` ажиллуулна.
+1. `frontend/lib/i18n/addons/<app>.js` файл үүсгэнэ.
+2. `export const <app> = { ... };` гэж бичнэ.
+3. `index.jsx`-д import хийж `dictionary` дотор spread хийнэ.
+4. `node scripts/i18n-check.mjs` ажиллуулна.
 
 ## 7. Сервер талын текст
 
