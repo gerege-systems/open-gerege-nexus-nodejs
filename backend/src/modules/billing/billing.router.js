@@ -6,8 +6,7 @@ const { appGateMiddleware } = require('../../middleware/rbac.middleware');
 
 const router = Router();
 
-router.use(authMiddleware);
-router.use(appGateMiddleware('io.example.billing'));
+router.use('/billing', authMiddleware, appGateMiddleware('io.example.billing'));
 
 // GET /api/v1/billing/invoices
 router.get('/billing/invoices', asyncHandler(async (req, res) => {

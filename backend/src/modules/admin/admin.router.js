@@ -5,8 +5,7 @@ const { authMiddleware, requireAdmin } = require('../../middleware/auth.middlewa
 
 const router = Router();
 
-router.use(authMiddleware);
-router.use(requireAdmin);
+router.use('/admin', authMiddleware, requireAdmin);
 
 // GET /api/v1/admin/access/overview
 router.get('/admin/access/overview', asyncHandler(async (req, res) => {

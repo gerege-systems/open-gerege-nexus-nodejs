@@ -5,8 +5,7 @@ const { appGateMiddleware } = require('../../middleware/rbac.middleware');
 
 const router = Router();
 
-router.use(authMiddleware);
-router.use(appGateMiddleware('io.example.gov_services'));
+router.use('/gov', authMiddleware, appGateMiddleware('io.example.gov_services'));
 
 // GET /api/v1/gov/services
 router.get('/gov/services', asyncHandler(async (req, res) => {

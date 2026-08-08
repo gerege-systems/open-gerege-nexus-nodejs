@@ -1,0 +1,9 @@
+-- +goose Up
+ALTER TABLE apps
+  ADD COLUMN IF NOT EXISTS version VARCHAR(32) NOT NULL DEFAULT '1.0.0',
+  ADD COLUMN IF NOT EXISTS translations JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- +goose Down
+ALTER TABLE apps
+  DROP COLUMN IF EXISTS translations,
+  DROP COLUMN IF EXISTS version;

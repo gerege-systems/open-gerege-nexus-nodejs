@@ -59,6 +59,19 @@ app.get('/ready', async (req, res) => {
 // API Routes (v1)
 const apiV1 = express.Router();
 
+apiV1.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'open-gerege-nexus-backend-node', version: '1.0.0' });
+});
+
+apiV1.get('/ready', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ready', database: 'connected' });
+  } catch (err) {
+    res.status(503).json({ status: 'error', message: 'Database unreachable', details: err.message });
+  }
+});
+
 apiV1.use(authRouter);
 apiV1.use(appstoreRouter);
 apiV1.use(contactsRouter);

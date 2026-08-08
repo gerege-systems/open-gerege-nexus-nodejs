@@ -7,7 +7,7 @@ const { createRateLimiter } = require('../../middleware/rateLimit');
 const router = Router();
 const aiLimiter = createRateLimiter({ windowMs: 60000, max: 20 });
 
-router.use(authMiddleware);
+router.use('/ai', authMiddleware);
 router.use(aiLimiter);
 
 // POST /api/v1/ai/copilot

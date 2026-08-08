@@ -5,7 +5,7 @@ const { authMiddleware, requireAdmin } = require('../../middleware/auth.middlewa
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(['/integrations', '/xyp'], authMiddleware);
 
 // GET /api/v1/integrations
 router.get('/integrations', requireAdmin, asyncHandler(async (req, res) => {

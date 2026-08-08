@@ -6,8 +6,7 @@ const { appGateMiddleware } = require('../../middleware/rbac.middleware');
 
 const router = Router();
 
-router.use(authMiddleware);
-router.use(appGateMiddleware('io.example.esign'));
+router.use('/esign', authMiddleware, appGateMiddleware('io.example.esign'));
 
 // GET /api/v1/esign/sessions
 router.get('/esign/sessions', asyncHandler(async (req, res) => {

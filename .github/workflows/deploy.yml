@@ -87,15 +87,19 @@ jobs:
 
       - name: Deploy stack via SSH
         env:
-          HOST: ${{ secrets.DEPLOY_HOST || 'js.nexus.gerege.mn' }}
-          USER: ${{ secrets.DEPLOY_USER || 'deploy' }}
-          PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+          HOST: ${{ vars.DEPLOY_HOST || 'js.nexus.gerege.mn' }}
+          USER: ${{ vars.DEPLOY_USER || 'deploy' }}
+          PORT: ${{ vars.DEPLOY_PORT || '22' }}
           TAG: ${{ inputs.tag || github.event.workflow_run.head_sha || github.sha }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ssh -o StrictHostKeyChecking=no -p "$PORT" "$USER@$HOST" "mkdir -p ~/app-js"
           scp -o StrictHostKeyChecking=no -P "$PORT" docker-compose.prod.yml "$USER@$HOST:~/app-js/docker-compose.yml"
           scp -o StrictHostKeyChecking=no -P "$PORT" deploy/nginx/js.nexus.gerege.mn.conf "$USER@$HOST:~/app-js/js.nexus.gerege.mn.conf"
-          
+
+          printf '%s' "$REGISTRY_TOKEN" | ssh -o StrictHostKeyChecking=no -p "$PORT" "$USER@$HOST" \
+            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin >/dev/null"
+
           ssh -o StrictHostKeyChecking=no -p "$PORT" "$USER@$HOST" "
             cd ~/app-js && \
             export IMAGE_BACKEND=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')-backend && \
