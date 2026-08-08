@@ -11,7 +11,7 @@ router.use('/esign', authMiddleware, appGateMiddleware('io.example.esign'));
 // GET /api/v1/esign/sessions
 router.get('/esign/sessions', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
-  const sessions = await query('SELECT * FROM esign_sessions WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
+  const sessions = await query('SELECT * FROM esign_sign_sessions WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
   res.json({ status: 'success', data: sessions });
 }));
 
