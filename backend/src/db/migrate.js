@@ -1,6 +1,6 @@
 /**
  * Gerege Nexus Backend — Automatic SQL Migration Engine
- * Reads and applies sorted .sql migrations sequentially
+ * Reads and applies sorted .sql migrations sequentially (Extracts Goose Up directives)
  */
 
 const fs = require('node:fs');
@@ -33,7 +33,12 @@ async function runMigrations() {
       if (rows.length === 0) {
         console.log(`[Migration] Applying ${file}...`);
         const filePath = path.join(migrationsDir, file);
-        const sql = fs.readFileSync(filePath, 'utf8');
+        let sql = fs.readFileSync(filePath, 'utf8');
+
+        // Extract ONLY the Goose UP migration SQL, ignore Down statements
+        if (sql.includes('-- +goose Down')) {
+          sql = sql.split('-- +goose Down')[0];
+        }
 
         await client.query('BEGIN');
         try {
