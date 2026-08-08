@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 test('Environment and Server Config Smoke Test', () => {
   assert.ok(process.env.PORT === undefined || typeof process.env.PORT === 'string');
@@ -26,6 +28,12 @@ test('Catalog App Validation Test', () => {
   const appSlug = 'contacts';
   const isValidSlug = /^[a-z0-9_-]+$/.test(appSlug);
   assert.ok(isValidSlug, 'App slug should be valid alphanumeric with hyphen');
+});
+
+test('App installation supplies the required installed version', () => {
+  const router = fs.readFileSync(path.join(__dirname, '../src/modules/appstore/appstore.router.js'), 'utf8');
+  assert.match(router, /INSERT INTO app_installations \(tenant_id, app_id, installed_version, enabled\)/);
+  assert.match(router, /COALESCE\(\$3, '1\.0\.0'\)/);
 });
 
 test('E-ID start endpoint matches the frontend contract', async (t) => {

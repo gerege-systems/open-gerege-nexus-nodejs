@@ -37,7 +37,7 @@ router.get('/installed-apps', authMiddleware, asyncHandler(async (req, res) => {
 // POST /api/v1/store/apps/:slug/install (Admin only)
 router.post('/store/apps/:slug/install', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
-  const app = await queryOne('SELECT id FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
+  const app = await queryOne('SELECT id, version FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
 
   if (!app) {
     res.status(404).json({ status: 'error', message: 'App not found in catalog' });
@@ -45,10 +45,11 @@ router.post('/store/apps/:slug/install', authMiddleware, requireAdmin, asyncHand
   }
 
   await query(
-    `INSERT INTO app_installations (tenant_id, app_id, enabled)
-     VALUES ($1, $2, true)
-     ON CONFLICT (tenant_id, app_id) DO UPDATE SET enabled = true`,
-    [tenantId, app.id]
+    `INSERT INTO app_installations (tenant_id, app_id, installed_version, enabled)
+     VALUES ($1, $2, COALESCE($3, '1.0.0'), true)
+     ON CONFLICT (tenant_id, app_id) DO UPDATE
+       SET enabled = true, installed_version = EXCLUDED.installed_version, updated_at = NOW()`,
+    [tenantId, app.id, app.version]
   );
 
   res.json({ status: 'success', message: `App '${req.params.slug}' installed successfully.` });
