@@ -6,6 +6,9 @@ async function fetcher(url, options = {}) {
     const headers = {
         "Content-Type": "application/json",
         "Accept-Language": locale,
+        ...(typeof window !== "undefined" && window.localStorage.getItem("auth_token")
+            ? { Authorization: `Bearer ${window.localStorage.getItem("auth_token")}` }
+            : {}),
         ...options.headers,
     };
     const res = await fetch(`${API_BASE}${url}`, {
@@ -46,10 +49,15 @@ async function mutateApp(url) {
 }
 export const api = {
     // Auth
-    login: (email, password) => fetcher("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-    }),
+    login: async (email, password) => {
+        const result = await fetcher("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password }),
+        });
+        if (result.token)
+            window.localStorage.setItem("auth_token", result.token);
+        return result;
+    },
     loginWithEID: (code, redirectURI, regNumber, otpCode, authMethod) => fetcher("/auth/eid/login", {
         method: "POST",
         body: JSON.stringify({ code, redirect_uri: redirectURI, reg_number: regNumber, otp_code: otpCode, auth_method: authMethod }),
@@ -58,12 +66,24 @@ export const api = {
     startEIDByNationalID: (nationalId, callbackUrl = "") => fetcher("/auth/eid/start-id", { method: "POST", body: JSON.stringify({ national_id: nationalId, callbackUrl }) }),
     // The poll is a long poll the API holds open for up to 25s, so the caller
     // passes a signal to drop it the moment the citizen cancels or leaves.
-    pollEID: (sessionId, signal) => fetcher("/auth/eid/poll", { method: "POST", body: JSON.stringify({ session_id: sessionId }), signal }),
+    pollEID: async (sessionId, signal) => {
+        const result = await fetcher("/auth/eid/poll", { method: "POST", body: JSON.stringify({ session_id: sessionId }), signal });
+        if (result.state === "COMPLETE" && result.token)
+            window.localStorage.setItem("auth_token", result.token);
+        return result;
+    },
     loginWithDAN: (danToken, regNumber, otpCode) => fetcher("/auth/dan/login", {
         method: "POST",
         body: JSON.stringify({ dan_token: danToken, reg_number: regNumber, otp_code: otpCode }),
     }),
-    logout: () => fetcher("/auth/logout", { method: "POST" }),
+    logout: async () => {
+        try {
+            return await fetcher("/auth/logout", { method: "POST" });
+        }
+        finally {
+            window.localStorage.removeItem("auth_token");
+        }
+    },
     // permissions carries the effective grant of every role the member holds; it
     // is empty for administrators, who bypass the check.
     getMe: () => fetcher("/auth/me"),

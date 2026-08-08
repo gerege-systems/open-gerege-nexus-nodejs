@@ -27,3 +27,23 @@ test('Catalog App Validation Test', () => {
   const isValidSlug = /^[a-z0-9_-]+$/.test(appSlug);
   assert.ok(isValidSlug, 'App slug should be valid alphanumeric with hyphen');
 });
+
+test('E-ID start endpoint matches the frontend contract', async (t) => {
+  const app = require('../src/server');
+  const server = app.listen(0, '127.0.0.1');
+  t.after(() => server.close());
+  await new Promise((resolve) => server.once('listening', resolve));
+
+  const { port } = server.address();
+  const response = await fetch(`http://127.0.0.1:${port}/api/v1/auth/eid/start`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: '{}',
+  });
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.match(body.session_id, /^eid_sess_/);
+  assert.match(body.verification_code, /^\d{6}$/);
+  assert.ok(body.device_link_url);
+  assert.ok(body.expires_at);
+});

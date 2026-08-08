@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const { randomInt } = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { env } = require('../../config/env');
@@ -83,10 +84,25 @@ router.post('/auth/eid/login', asyncHandler(async (req, res) => {
   });
 }));
 
+function startEidSession(req, res) {
+  const sessionId = `eid_sess_${Date.now()}`;
+  res.json({
+    status: 'success',
+    session_id: sessionId,
+    verification_code: String(randomInt(100000, 1000000)),
+    device_link_url: `geregesmartid://approve?sessionId=${encodeURIComponent(sessionId)}`,
+    expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+  });
+}
+
+router.post('/auth/eid/start', startEidSession);
+router.post('/auth/eid/start-id', startEidSession);
+
 // POST /api/v1/auth/eid/poll
 router.post('/auth/eid/poll', asyncHandler(async (req, res) => {
   res.json({
     status: 'completed',
+    state: 'COMPLETE',
     token: jwt.sign({ sub: 'eid-user-id', email: 'citizen@mn.gov', role: 'user' }, env.JWT_SECRET),
   });
 }));
