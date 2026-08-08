@@ -1,34 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { env } from '../config/env.js';
-import { queryOne } from '../db/index.js';
+const jwt = require('jsonwebtoken');
+const { env } = require('../config/env');
+const { queryOne } = require('../db/index');
 
-export interface AuthUser {
-  id: string;
-  email: string;
-  fullName: string;
-  role: string;
-  tenantId?: string;
-  isSuperAdmin: boolean;
-}
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthUser;
-      tenantId?: string;
-    }
-  }
-}
-
-export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
-  const tenantIdHeader = req.headers['x-tenant-id'] as string;
+  const tenantIdHeader = req.headers['x-tenant-id'];
 
   let token = '';
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7);
-  } else if (req.cookies?.session_token) {
+  } else if (req.cookies && req.cookies.session_token) {
     token = req.cookies.session_token;
   }
 
@@ -38,8 +19,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   }
 
   try {
-    // 1. Try JWT verification first
-    const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+    const decoded = jwt.verify(token, env.JWT_SECRET);
     req.user = {
       id: decoded.sub || decoded.userId,
       email: decoded.email,
@@ -51,15 +31,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     req.tenantId = req.user.tenantId || tenantIdHeader;
     return next();
   } catch (jwtErr) {
-    // 2. Fallback to DB Session token lookup
-    const session = await queryOne<{
-      user_id: string;
-      tenant_id: string;
-      email: string;
-      full_name: string;
-      role: string;
-      expires_at: Date;
-    }>(
+    const session = await queryOne(
       `SELECT s.user_id, s.tenant_id, u.email, u.full_name, u.role, s.expires_at
        FROM sessions s
        JOIN users u ON s.user_id = u.id
@@ -85,10 +57,15 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   }
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+function requireAdmin(req, res, next) {
   if (!req.user || !req.user.isSuperAdmin) {
     res.status(403).json({ status: 'error', message: 'Administrator privileges required' });
     return;
   }
   next();
 }
+
+module.exports = {
+  authMiddleware,
+  requireAdmin,
+};

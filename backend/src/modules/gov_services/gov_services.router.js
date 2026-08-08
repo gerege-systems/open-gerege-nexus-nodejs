@@ -1,8 +1,7 @@
-import { Router, Request, Response } from 'express';
-import { query } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware } from '../../middleware/auth.middleware.js';
-import { appGateMiddleware } from '../../middleware/rbac.middleware.js';
+const { Router } = require('express');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware } = require('../../middleware/auth.middleware');
+const { appGateMiddleware } = require('../../middleware/rbac.middleware');
 
 const router = Router();
 
@@ -10,7 +9,7 @@ router.use(authMiddleware);
 router.use(appGateMiddleware('io.example.gov_services'));
 
 // GET /api/v1/gov/services
-router.get('/gov/services', asyncHandler(async (req: Request, res: Response) => {
+router.get('/gov/services', asyncHandler(async (req, res) => {
   res.json({
     status: 'success',
     data: [
@@ -21,4 +20,4 @@ router.get('/gov/services', asyncHandler(async (req: Request, res: Response) => 
   });
 }));
 
-export default router;
+module.exports = router;

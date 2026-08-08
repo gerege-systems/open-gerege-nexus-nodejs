@@ -1,7 +1,7 @@
-import { Router, Request, Response } from 'express';
-import { query, queryOne } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware, requireAdmin } from '../../middleware/auth.middleware.js';
+const { Router } = require('express');
+const { query, queryOne } = require('../../db/index');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware, requireAdmin } = require('../../middleware/auth.middleware');
 
 const router = Router();
 
@@ -9,7 +9,7 @@ router.use(authMiddleware);
 router.use(requireAdmin);
 
 // GET /api/v1/admin/access/overview
-router.get('/admin/access/overview', asyncHandler(async (req: Request, res: Response) => {
+router.get('/admin/access/overview', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
 
   const roles = await query('SELECT * FROM roles WHERE tenant_id = $1 OR is_system = true', [tenantId]);
@@ -31,7 +31,7 @@ router.get('/admin/access/overview', asyncHandler(async (req: Request, res: Resp
 }));
 
 // POST /api/v1/admin/access/roles
-router.post('/admin/access/roles', asyncHandler(async (req: Request, res: Response) => {
+router.post('/admin/access/roles', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
   const { code, name, description } = req.body;
 
@@ -42,11 +42,11 @@ router.post('/admin/access/roles', asyncHandler(async (req: Request, res: Respon
     [tenantId, code, name, description || '']
   );
 
-  res.status(201).json({ status: 'success', id: role?.id, role });
+  res.status(201).json({ status: 'success', id: role ? role.id : null, role });
 }));
 
 // PUT /api/v1/admin/access/roles/:id
-router.put('/admin/access/roles/:id', asyncHandler(async (req: Request, res: Response) => {
+router.put('/admin/access/roles/:id', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
   const { name, description } = req.body;
 
@@ -61,15 +61,15 @@ router.put('/admin/access/roles/:id', asyncHandler(async (req: Request, res: Res
 }));
 
 // DELETE /api/v1/admin/access/roles/:id
-router.delete('/admin/access/roles/:id', asyncHandler(async (req: Request, res: Response) => {
+router.delete('/admin/access/roles/:id', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
   await query('DELETE FROM roles WHERE id = $1 AND tenant_id = $2 AND is_system = false', [req.params.id, tenantId]);
   res.json({ status: 'success', message: 'Role deleted' });
 }));
 
 // PUT /api/v1/admin/access/roles/:id/permissions
-router.put('/admin/access/roles/:id/permissions', asyncHandler(async (req: Request, res: Response) => {
-  const { permissions } = req.body; // array of permission ids or codes
+router.put('/admin/access/roles/:id/permissions', asyncHandler(async (req, res) => {
+  const { permissions } = req.body;
   const roleId = req.params.id;
 
   await query('DELETE FROM role_permissions WHERE role_id = $1', [roleId]);
@@ -88,17 +88,17 @@ router.put('/admin/access/roles/:id/permissions', asyncHandler(async (req: Reque
 }));
 
 // GET /api/v1/admin/email-verification/overview
-router.get('/admin/email-verification/overview', asyncHandler(async (req: Request, res: Response) => {
+router.get('/admin/email-verification/overview', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
   const clients = await query('SELECT id, name, key_prefix, status, hourly_limit, created_at FROM email_verify_clients WHERE tenant_id = $1', [tenantId]);
   res.json({ status: 'success', clients });
 }));
 
 // GET /api/v1/admin/email-verification/clients
-router.get('/admin/email-verification/clients', asyncHandler(async (req: Request, res: Response) => {
+router.get('/admin/email-verification/clients', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
   const clients = await query('SELECT * FROM email_verify_clients WHERE tenant_id = $1', [tenantId]);
   res.json({ status: 'success', clients });
 }));
 
-export default router;
+module.exports = router;

@@ -1,11 +1,13 @@
-export const logger = {
-  info: (msg: string, meta?: any) => {
+const logger = {
+  info: (msg, meta) => {
     console.log(JSON.stringify({ level: 'info', timestamp: new Date().toISOString(), message: msg, ...meta }));
   },
-  warn: (msg: string, meta?: any) => {
+  warn: (msg, meta) => {
     console.warn(JSON.stringify({ level: 'warn', timestamp: new Date().toISOString(), message: msg, ...meta }));
   },
-  error: (msg: string, meta?: any) => {
+  error: (msg, meta) => {
     console.error(JSON.stringify({ level: 'error', timestamp: new Date().toISOString(), message: msg, ...meta }));
   },
 };
+
+module.exports = { logger };

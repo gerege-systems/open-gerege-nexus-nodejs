@@ -1,8 +1,8 @@
-import { Router, Request, Response } from 'express';
-import { query, queryOne } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware } from '../../middleware/auth.middleware.js';
-import { appGateMiddleware } from '../../middleware/rbac.middleware.js';
+const { Router } = require('express');
+const { query, queryOne } = require('../../db/index');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware } = require('../../middleware/auth.middleware');
+const { appGateMiddleware } = require('../../middleware/rbac.middleware');
 
 const router = Router();
 
@@ -10,7 +10,7 @@ router.use(authMiddleware);
 router.use(appGateMiddleware('io.example.inventory'));
 
 // GET /api/v1/inventory
-router.get('/inventory', asyncHandler(async (req: Request, res: Response) => {
+router.get('/inventory', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const items = await query(
     `SELECT i.*, p.name as product_name, p.sku
@@ -23,16 +23,16 @@ router.get('/inventory', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // POST /api/v1/inventory/adjust
-router.post('/inventory/adjust', asyncHandler(async (req: Request, res: Response) => {
+router.post('/inventory/adjust', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
-  const { product_id, quantity_delta, reason } = req.body;
+  const { product_id, quantity_delta } = req.body;
 
   if (!product_id || quantity_delta === undefined) {
     res.status(400).json({ status: 'error', message: 'Product ID and quantity_delta are required' });
     return;
   }
 
-  const existing = await queryOne<{ quantity: number }>(
+  const existing = await queryOne(
     `SELECT quantity FROM inventory WHERE product_id = $1 AND tenant_id = $2`,
     [product_id, tenantId]
   );
@@ -57,4 +57,4 @@ router.post('/inventory/adjust', asyncHandler(async (req: Request, res: Response
   res.json({ status: 'success', data: updated });
 }));
 
-export default router;
+module.exports = router;

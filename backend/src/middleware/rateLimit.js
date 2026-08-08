@@ -1,16 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-
-interface RateLimitOptions {
-  windowMs: number;
-  max: number;
-  message?: string;
-}
-
-export function createRateLimiter(options: RateLimitOptions) {
+function createRateLimiter(options) {
   const { windowMs, max, message = 'Too many requests, please try again later.' } = options;
-  const requestsMap = new Map<string, { count: number; resetTime: number }>();
+  const requestsMap = new Map();
 
-  // Periodically clean up expired keys to prevent memory leak
   setInterval(() => {
     const now = Date.now();
     for (const [key, record] of requestsMap.entries()) {
@@ -20,7 +11,7 @@ export function createRateLimiter(options: RateLimitOptions) {
     }
   }, windowMs).unref();
 
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req, res, next) => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const now = Date.now();
     const record = requestsMap.get(ip);
@@ -41,3 +32,5 @@ export function createRateLimiter(options: RateLimitOptions) {
     next();
   };
 }
+
+module.exports = { createRateLimiter };

@@ -1,11 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/logger.js';
+const { logger } = require('../utils/logger');
 
-export interface HttpError extends Error {
-  statusCode?: number;
-}
-
-export function errorMiddleware(err: HttpError, req: Request, res: Response, next: NextFunction) {
+function errorMiddleware(err, req, res, next) {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 
@@ -20,3 +15,5 @@ export function errorMiddleware(err: HttpError, req: Request, res: Response, nex
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 }
+
+module.exports = { errorMiddleware };

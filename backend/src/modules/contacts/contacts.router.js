@@ -1,24 +1,23 @@
-import { Router, Request, Response } from 'express';
-import { query, queryOne } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware } from '../../middleware/auth.middleware.js';
-import { appGateMiddleware } from '../../middleware/rbac.middleware.js';
+const { Router } = require('express');
+const { query, queryOne } = require('../../db/index');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware } = require('../../middleware/auth.middleware');
+const { appGateMiddleware } = require('../../middleware/rbac.middleware');
 
 const router = Router();
 
-// Mount all contact endpoints behind authentication and app-gate
 router.use(authMiddleware);
 router.use(appGateMiddleware('io.example.contacts'));
 
 // GET /api/v1/contacts
-router.get('/contacts', asyncHandler(async (req: Request, res: Response) => {
+router.get('/contacts', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const contacts = await query('SELECT * FROM contacts WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
   res.json({ status: 'success', data: contacts });
 }));
 
 // GET /api/v1/contacts/:id
-router.get('/contacts/:id', asyncHandler(async (req: Request, res: Response) => {
+router.get('/contacts/:id', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const contact = await queryOne('SELECT * FROM contacts WHERE id = $1 AND tenant_id = $2', [req.params.id, tenantId]);
   if (!contact) {
@@ -29,7 +28,7 @@ router.get('/contacts/:id', asyncHandler(async (req: Request, res: Response) => 
 }));
 
 // POST /api/v1/contacts
-router.post('/contacts', asyncHandler(async (req: Request, res: Response) => {
+router.post('/contacts', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const { name, email, phone, company, address } = req.body;
 
@@ -49,7 +48,7 @@ router.post('/contacts', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // PUT /api/v1/contacts/:id
-router.put('/contacts/:id', asyncHandler(async (req: Request, res: Response) => {
+router.put('/contacts/:id', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const { name, email, phone, company, address } = req.body;
 
@@ -75,10 +74,10 @@ router.put('/contacts/:id', asyncHandler(async (req: Request, res: Response) => 
 }));
 
 // DELETE /api/v1/contacts/:id
-router.delete('/contacts/:id', asyncHandler(async (req: Request, res: Response) => {
+router.delete('/contacts/:id', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   await query('DELETE FROM contacts WHERE id = $1 AND tenant_id = $2', [req.params.id, tenantId]);
   res.json({ status: 'success', message: 'Contact deleted successfully' });
 }));
 
-export default router;
+module.exports = router;

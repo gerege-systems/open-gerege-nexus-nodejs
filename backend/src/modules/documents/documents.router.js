@@ -1,8 +1,8 @@
-import { Router, Request, Response } from 'express';
-import { query, queryOne } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware } from '../../middleware/auth.middleware.js';
-import { appGateMiddleware } from '../../middleware/rbac.middleware.js';
+const { Router } = require('express');
+const { query, queryOne } = require('../../db/index');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware } = require('../../middleware/auth.middleware');
+const { appGateMiddleware } = require('../../middleware/rbac.middleware');
 
 const router = Router();
 
@@ -10,14 +10,14 @@ router.use(authMiddleware);
 router.use(appGateMiddleware('io.example.documents'));
 
 // GET /api/v1/documents
-router.get('/documents', asyncHandler(async (req: Request, res: Response) => {
+router.get('/documents', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const docs = await query('SELECT * FROM documents WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
   res.json({ status: 'success', data: docs });
 }));
 
 // GET /api/v1/documents/:id
-router.get('/documents/:id', asyncHandler(async (req: Request, res: Response) => {
+router.get('/documents/:id', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const doc = await queryOne('SELECT * FROM documents WHERE id = $1 AND tenant_id = $2', [req.params.id, tenantId]);
   if (!doc) {
@@ -28,9 +28,9 @@ router.get('/documents/:id', asyncHandler(async (req: Request, res: Response) =>
 }));
 
 // POST /api/v1/documents
-router.post('/documents', asyncHandler(async (req: Request, res: Response) => {
+router.post('/documents', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
-  const userId = req.user?.id;
+  const userId = req.user ? req.user.id : null;
   const { title, content, type } = req.body;
 
   if (!title) {
@@ -48,4 +48,4 @@ router.post('/documents', asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json({ status: 'success', data: doc });
 }));
 
-export default router;
+module.exports = router;

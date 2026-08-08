@@ -1,10 +1,10 @@
-import dotenv from 'dotenv';
-import path from 'node:path';
+const dotenv = require('dotenv');
+const path = require('node:path');
 
 dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
-dotenv.config(); // fallback to local .env
+dotenv.config();
 
-export const env = {
+const env = {
   PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 8080,
   DATABASE_URL: process.env.DATABASE_URL || 'postgres://postgres:postgrespassword@localhost:5432/platform_db?sslmode=disable',
   JWT_SECRET: process.env.JWT_SECRET || 'gerege-nexus-ultra-secure-secret-key-2026',
@@ -13,3 +13,5 @@ export const env = {
   CATALOG_PATH: process.env.CATALOG_PATH || path.resolve(process.cwd(), '../catalog/apps.json'),
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
 };
+
+module.exports = { env };

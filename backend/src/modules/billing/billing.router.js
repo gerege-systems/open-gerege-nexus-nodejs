@@ -1,8 +1,8 @@
-import { Router, Request, Response } from 'express';
-import { query, queryOne } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware } from '../../middleware/auth.middleware.js';
-import { appGateMiddleware } from '../../middleware/rbac.middleware.js';
+const { Router } = require('express');
+const { query, queryOne } = require('../../db/index');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware } = require('../../middleware/auth.middleware');
+const { appGateMiddleware } = require('../../middleware/rbac.middleware');
 
 const router = Router();
 
@@ -10,14 +10,14 @@ router.use(authMiddleware);
 router.use(appGateMiddleware('io.example.billing'));
 
 // GET /api/v1/billing/invoices
-router.get('/billing/invoices', asyncHandler(async (req: Request, res: Response) => {
+router.get('/billing/invoices', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const invoices = await query('SELECT * FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
   res.json({ status: 'success', data: invoices });
 }));
 
 // POST /api/v1/billing/invoices
-router.post('/billing/invoices', asyncHandler(async (req: Request, res: Response) => {
+router.post('/billing/invoices', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const { customer_name, amount, due_date, items } = req.body;
 
@@ -38,7 +38,7 @@ router.post('/billing/invoices', asyncHandler(async (req: Request, res: Response
 }));
 
 // POST /api/v1/billing/invoices/:id/pay
-router.post('/billing/invoices/:id/pay', asyncHandler(async (req: Request, res: Response) => {
+router.post('/billing/invoices/:id/pay', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
   const invoice = await queryOne(
     `UPDATE invoices SET status = 'paid', paid_at = CURRENT_TIMESTAMP
@@ -55,4 +55,4 @@ router.post('/billing/invoices/:id/pay', asyncHandler(async (req: Request, res: 
   res.json({ status: 'success', data: invoice });
 }));
 
-export default router;
+module.exports = router;

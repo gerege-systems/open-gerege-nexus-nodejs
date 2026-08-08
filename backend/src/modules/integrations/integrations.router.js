@@ -1,21 +1,21 @@
-import { Router, Request, Response } from 'express';
-import { query, queryOne } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware, requireAdmin } from '../../middleware/auth.middleware.js';
+const { Router } = require('express');
+const { query, queryOne } = require('../../db/index');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware, requireAdmin } = require('../../middleware/auth.middleware');
 
 const router = Router();
 
 router.use(authMiddleware);
 
 // GET /api/v1/integrations
-router.get('/integrations', requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.get('/integrations', requireAdmin, asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
   const integrations = await query('SELECT * FROM integrations WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
   res.json({ status: 'success', data: integrations });
 }));
 
 // GET /api/v1/integrations/providers
-router.get('/integrations/providers', asyncHandler(async (req: Request, res: Response) => {
+router.get('/integrations/providers', asyncHandler(async (req, res) => {
   res.json({
     status: 'success',
     providers: [
@@ -28,7 +28,7 @@ router.get('/integrations/providers', asyncHandler(async (req: Request, res: Res
 }));
 
 // POST /api/v1/integrations
-router.post('/integrations', requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.post('/integrations', requireAdmin, asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
   const { name, provider, target_url, config } = req.body;
 
@@ -48,7 +48,7 @@ router.post('/integrations', requireAdmin, asyncHandler(async (req: Request, res
 }));
 
 // POST /api/v1/xyp/citizen
-router.post('/xyp/citizen', asyncHandler(async (req: Request, res: Response) => {
+router.post('/xyp/citizen', asyncHandler(async (req, res) => {
   const { reg_num } = req.body;
   if (!reg_num) {
     res.status(400).json({ status: 'error', message: 'Registration number required' });
@@ -69,7 +69,7 @@ router.post('/xyp/citizen', asyncHandler(async (req: Request, res: Response) => 
 }));
 
 // POST /api/v1/xyp/company
-router.post('/xyp/company', asyncHandler(async (req: Request, res: Response) => {
+router.post('/xyp/company', asyncHandler(async (req, res) => {
   const { state_reg_num } = req.body;
   if (!state_reg_num) {
     res.status(400).json({ status: 'error', message: 'State registration number required' });
@@ -87,4 +87,4 @@ router.post('/xyp/company', asyncHandler(async (req: Request, res: Response) => 
   });
 }));
 
-export default router;
+module.exports = router;

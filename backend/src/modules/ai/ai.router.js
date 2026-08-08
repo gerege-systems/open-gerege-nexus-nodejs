@@ -1,8 +1,8 @@
-import { Router, Request, Response } from 'express';
-import { env } from '../../config/env.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware } from '../../middleware/auth.middleware.js';
-import { createRateLimiter } from '../../middleware/rateLimit.js';
+const { Router } = require('express');
+const { env } = require('../../config/env');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware } = require('../../middleware/auth.middleware');
+const { createRateLimiter } = require('../../middleware/rateLimit');
 
 const router = Router();
 const aiLimiter = createRateLimiter({ windowMs: 60000, max: 20 });
@@ -11,8 +11,8 @@ router.use(authMiddleware);
 router.use(aiLimiter);
 
 // POST /api/v1/ai/copilot
-router.post('/ai/copilot', asyncHandler(async (req: Request, res: Response) => {
-  const { prompt, context } = req.body;
+router.post('/ai/copilot', asyncHandler(async (req, res) => {
+  const { prompt } = req.body;
 
   if (!env.GEMINI_API_KEY) {
     res.json({
@@ -22,7 +22,6 @@ router.post('/ai/copilot', asyncHandler(async (req: Request, res: Response) => {
     return;
   }
 
-  // Live Gemini API integration via native fetch
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
@@ -34,16 +33,16 @@ router.post('/ai/copilot', asyncHandler(async (req: Request, res: Response) => {
         }),
       }
     );
-    const data: any = await response.json();
+    const data = await response.json();
     const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
     res.json({ status: 'success', reply: replyText });
-  } catch (err: any) {
+  } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
 }));
 
 // POST /api/v1/ai/translate
-router.post('/api/v1/ai/translate', asyncHandler(async (req: Request, res: Response) => {
+router.post('/ai/translate', asyncHandler(async (req, res) => {
   const { text, targetLang } = req.body;
   res.json({
     status: 'success',
@@ -53,7 +52,7 @@ router.post('/api/v1/ai/translate', asyncHandler(async (req: Request, res: Respo
 }));
 
 // GET /api/v1/ai/stock-forecast
-router.get('/ai/stock-forecast', asyncHandler(async (req: Request, res: Response) => {
+router.get('/ai/stock-forecast', asyncHandler(async (req, res) => {
   res.json({
     status: 'success',
     forecast: [
@@ -63,4 +62,4 @@ router.get('/ai/stock-forecast', asyncHandler(async (req: Request, res: Response
   });
 }));
 
-export default router;
+module.exports = router;

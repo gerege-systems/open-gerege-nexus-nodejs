@@ -1,11 +1,10 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { pool } from './index.js';
+const fs = require('node:fs');
+const path = require('node:path');
+const { pool } = require('./index');
 
-export async function runMigrations() {
+async function runMigrations() {
   const client = await pool.connect();
   try {
-    // Create migrations table if not exists
     await client.query(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         version VARCHAR(255) PRIMARY KEY,
@@ -13,7 +12,6 @@ export async function runMigrations() {
       );
     `);
 
-    // Migrations folder is located at backend/db/migrations
     const migrationsDir = path.resolve(process.cwd(), 'db/migrations');
     if (!fs.existsSync(migrationsDir)) {
       console.warn(`[Migration] Directory not found: ${migrationsDir}`);
@@ -50,8 +48,9 @@ export async function runMigrations() {
   }
 }
 
-// Allow direct CLI execution: npm run db:migrate
-if (process.argv[1]?.endsWith('migrate.ts') || process.argv[1]?.endsWith('migrate.js')) {
+module.exports = { runMigrations };
+
+if (require.main === module) {
   runMigrations()
     .then(() => process.exit(0))
     .catch((err) => {

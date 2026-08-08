@@ -1,10 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
-import { queryOne } from '../db/index.js';
+const { queryOne } = require('../db/index');
 
-// Check if tenant has installed/enabled a specific application module
-export function appGateMiddleware(appSlugOrId: string) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const tenantId = req.tenantId || req.headers['x-tenant-id'] as string;
+function appGateMiddleware(appSlugOrId) {
+  return async (req, res, next) => {
+    const tenantId = req.tenantId || req.headers['x-tenant-id'];
     if (!tenantId) {
       res.status(400).json({ status: 'error', message: 'Missing X-Tenant-ID header' });
       return;
@@ -30,14 +28,13 @@ export function appGateMiddleware(appSlugOrId: string) {
   };
 }
 
-// Require RBAC permission
-export function requirePermission(permissionCode: string) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    if (req.user?.isSuperAdmin) {
+function requirePermission(permissionCode) {
+  return async (req, res, next) => {
+    if (req.user && req.user.isSuperAdmin) {
       return next();
     }
 
-    const userId = req.user?.id;
+    const userId = req.user ? req.user.id : null;
     const tenantId = req.tenantId;
 
     if (!userId || !tenantId) {
@@ -62,3 +59,8 @@ export function requirePermission(permissionCode: string) {
     next();
   };
 }
+
+module.exports = {
+  appGateMiddleware,
+  requirePermission,
+};

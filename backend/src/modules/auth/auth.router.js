@@ -1,15 +1,15 @@
-import { Router, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { env } from '../../config/env.js';
-import { query, queryOne } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware } from '../../middleware/auth.middleware.js';
+const { Router } = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { env } = require('../../config/env');
+const { query, queryOne } = require('../../db/index');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware } = require('../../middleware/auth.middleware');
 
 const router = Router();
 
 // POST /api/v1/auth/login
-router.post('/auth/login', asyncHandler(async (req: Request, res: Response) => {
+router.post('/auth/login', asyncHandler(async (req, res) => {
   const { email, password, tenant_id } = req.body;
 
   if (!email || !password) {
@@ -28,18 +28,17 @@ router.post('/auth/login', asyncHandler(async (req: Request, res: Response) => {
   }
 
   const match = await bcrypt.compare(password, user.password_hash);
-  if (!match && password !== 'password123') { // Fallback for dev seeding if hash is mock
+  if (!match && password !== 'password123') {
     res.status(401).json({ status: 'error', message: 'Invalid credentials' });
     return;
   }
 
-  // Get active tenant for user
   const tenant = await queryOne(
     `SELECT tenant_id FROM tenant_memberships WHERE user_id = $1 LIMIT 1`,
     [user.id]
   );
 
-  const activeTenantId = tenant_id || tenant?.tenant_id || 'default-tenant';
+  const activeTenantId = tenant_id || (tenant ? tenant.tenant_id : 'default-tenant');
 
   const token = jwt.sign(
     {
@@ -54,7 +53,6 @@ router.post('/auth/login', asyncHandler(async (req: Request, res: Response) => {
     { expiresIn: `${env.SESSION_TTL_HOURS}h` }
   );
 
-  // Store session in DB
   const expiresAt = new Date(Date.now() + env.SESSION_TTL_HOURS * 3600 * 1000);
   await query(
     `INSERT INTO sessions (token, user_id, tenant_id, expires_at)
@@ -77,8 +75,7 @@ router.post('/auth/login', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // POST /api/v1/auth/eid/login
-router.post('/auth/eid/login', asyncHandler(async (req: Request, res: Response) => {
-  const { national_id } = req.body;
+router.post('/auth/eid/login', asyncHandler(async (req, res) => {
   res.json({
     status: 'success',
     session_id: `eid_sess_${Date.now()}`,
@@ -87,7 +84,7 @@ router.post('/auth/eid/login', asyncHandler(async (req: Request, res: Response) 
 }));
 
 // POST /api/v1/auth/eid/poll
-router.post('/auth/eid/poll', asyncHandler(async (req: Request, res: Response) => {
+router.post('/auth/eid/poll', asyncHandler(async (req, res) => {
   res.json({
     status: 'completed',
     token: jwt.sign({ sub: 'eid-user-id', email: 'citizen@mn.gov', role: 'user' }, env.JWT_SECRET),
@@ -95,7 +92,7 @@ router.post('/auth/eid/poll', asyncHandler(async (req: Request, res: Response) =
 }));
 
 // POST /api/v1/auth/dan/login
-router.post('/auth/dan/login', asyncHandler(async (req: Request, res: Response) => {
+router.post('/auth/dan/login', asyncHandler(async (req, res) => {
   res.json({
     status: 'success',
     redirect_url: 'https://dan.gov.mn/oauth2/authorize?client_id=gerege-nexus',
@@ -103,7 +100,7 @@ router.post('/auth/dan/login', asyncHandler(async (req: Request, res: Response) 
 }));
 
 // POST /api/v1/auth/logout
-router.post('/auth/logout', asyncHandler(async (req: Request, res: Response) => {
+router.post('/auth/logout', asyncHandler(async (req, res) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
@@ -113,7 +110,7 @@ router.post('/auth/logout', asyncHandler(async (req: Request, res: Response) => 
 }));
 
 // GET /api/v1/auth/me (Protected)
-router.get('/auth/me', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+router.get('/auth/me', authMiddleware, asyncHandler(async (req, res) => {
   res.json({
     status: 'success',
     user: req.user,
@@ -121,10 +118,9 @@ router.get('/auth/me', authMiddleware, asyncHandler(async (req: Request, res: Re
 }));
 
 // GET /api/v1/menus (Protected)
-router.get('/menus', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+router.get('/menus', authMiddleware, asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
-  
-  // Get installed apps for this tenant
+
   const apps = await query(
     `SELECT a.id, a.slug, a.name, a.icon_url, a.category
      FROM app_installations ai
@@ -144,4 +140,4 @@ router.get('/menus', authMiddleware, asyncHandler(async (req: Request, res: Resp
   res.json({ status: 'success', menus });
 }));
 
-export default router;
+module.exports = router;

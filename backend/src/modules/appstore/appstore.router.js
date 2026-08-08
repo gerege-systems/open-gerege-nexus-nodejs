@@ -1,18 +1,18 @@
-import { Router, Request, Response } from 'express';
-import { query, queryOne } from '../../db/index.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { authMiddleware, requireAdmin } from '../../middleware/auth.middleware.js';
+const { Router } = require('express');
+const { query, queryOne } = require('../../db/index');
+const { asyncHandler } = require('../../utils/asyncHandler');
+const { authMiddleware, requireAdmin } = require('../../middleware/auth.middleware');
 
 const router = Router();
 
 // GET /api/v1/store/apps
-router.get('/store/apps', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+router.get('/store/apps', authMiddleware, asyncHandler(async (req, res) => {
   const apps = await query('SELECT * FROM apps ORDER BY name ASC');
   res.json({ status: 'success', data: apps });
 }));
 
 // GET /api/v1/store/apps/:slug
-router.get('/store/apps/:slug', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+router.get('/store/apps/:slug', authMiddleware, asyncHandler(async (req, res) => {
   const app = await queryOne('SELECT * FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
   if (!app) {
     res.status(404).json({ status: 'error', message: 'App not found' });
@@ -22,7 +22,7 @@ router.get('/store/apps/:slug', authMiddleware, asyncHandler(async (req: Request
 }));
 
 // GET /api/v1/installed-apps
-router.get('/installed-apps', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+router.get('/installed-apps', authMiddleware, asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
   const installed = await query(
     `SELECT ai.id as installation_id, ai.enabled, ai.installed_at, a.*
@@ -35,9 +35,9 @@ router.get('/installed-apps', authMiddleware, asyncHandler(async (req: Request, 
 }));
 
 // POST /api/v1/store/apps/:slug/install (Admin only)
-router.post('/store/apps/:slug/install', authMiddleware, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.post('/store/apps/:slug/install', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
-  const app = await queryOne<{ id: string }>('SELECT id FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
+  const app = await queryOne('SELECT id FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
 
   if (!app) {
     res.status(404).json({ status: 'error', message: 'App not found in catalog' });
@@ -55,9 +55,9 @@ router.post('/store/apps/:slug/install', authMiddleware, requireAdmin, asyncHand
 }));
 
 // POST /api/v1/store/apps/:slug/enable (Admin only)
-router.post('/store/apps/:slug/enable', authMiddleware, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.post('/store/apps/:slug/enable', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
-  const app = await queryOne<{ id: string }>('SELECT id FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
+  const app = await queryOne('SELECT id FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
 
   if (!app) {
     res.status(404).json({ status: 'error', message: 'App not found' });
@@ -69,9 +69,9 @@ router.post('/store/apps/:slug/enable', authMiddleware, requireAdmin, asyncHandl
 }));
 
 // POST /api/v1/store/apps/:slug/disable (Admin only)
-router.post('/store/apps/:slug/disable', authMiddleware, requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+router.post('/store/apps/:slug/disable', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
-  const app = await queryOne<{ id: string }>('SELECT id FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
+  const app = await queryOne('SELECT id FROM apps WHERE slug = $1 OR id = $1', [req.params.slug]);
 
   if (!app) {
     res.status(404).json({ status: 'error', message: 'App not found' });
@@ -82,4 +82,4 @@ router.post('/store/apps/:slug/disable', authMiddleware, requireAdmin, asyncHand
   res.json({ status: 'success', message: `App '${req.params.slug}' disabled.` });
 }));
 
-export default router;
+module.exports = router;

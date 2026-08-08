@@ -1,18 +1,5 @@
-# Production Multi-stage Dockerfile for Gerege Nexus Node.js Express backend
-FROM node:22-alpine AS builder
-
-WORKDIR /app/backend
-
-COPY backend/package*.json ./
-RUN npm ci
-
-COPY backend/ ./
-COPY catalog/ /app/catalog/
-
-RUN npm run build
-
-# Production Runner Image
-FROM node:22-alpine AS runner
+# Production Dockerfile for Gerege Nexus Node.js Express CommonJS backend
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -24,7 +11,7 @@ RUN apk add --no-cache tzdata
 COPY backend/package*.json ./backend/
 RUN cd backend && npm ci --only=production
 
-COPY --from=builder /app/backend/dist ./backend/dist
+COPY backend/src/ ./backend/src/
 COPY catalog/ ./catalog/
 COPY backend/db/migrations/ ./backend/db/migrations/
 
@@ -32,4 +19,4 @@ WORKDIR /app/backend
 
 EXPOSE 8080
 
-CMD ["node", "dist/server.js"]
+CMD ["node", "src/server.js"]

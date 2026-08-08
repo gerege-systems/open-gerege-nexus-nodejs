@@ -1,22 +1,9 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { env } from '../config/env.js';
-import { pool } from '../db/index.js';
-import { logger } from '../utils/logger.js';
+const fs = require('node:fs');
+const { env } = require('../config/env');
+const { pool } = require('../db/index');
+const { logger } = require('../utils/logger');
 
-export interface CatalogApp {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  icon_url?: string;
-  category?: string;
-  visibility?: string;
-  version?: string;
-  translations?: Record<string, any>;
-}
-
-export async function syncCatalogToDatabase(): Promise<void> {
+async function syncCatalogToDatabase() {
   if (!fs.existsSync(env.CATALOG_PATH)) {
     logger.warn(`Catalog file not found at ${env.CATALOG_PATH}`);
     return;
@@ -24,7 +11,7 @@ export async function syncCatalogToDatabase(): Promise<void> {
 
   try {
     const rawData = fs.readFileSync(env.CATALOG_PATH, 'utf8');
-    const apps: CatalogApp[] = JSON.parse(rawData);
+    const apps = JSON.parse(rawData);
 
     const client = await pool.connect();
     try {
@@ -64,6 +51,8 @@ export async function syncCatalogToDatabase(): Promise<void> {
       client.release();
     }
   } catch (err) {
-    logger.error('Failed to sync catalog apps to database', { error: (err as Error).message });
+    logger.error('Failed to sync catalog apps to database', { error: err.message });
   }
 }
+
+module.exports = { syncCatalogToDatabase };
