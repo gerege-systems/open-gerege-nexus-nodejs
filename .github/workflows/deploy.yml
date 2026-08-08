@@ -108,6 +108,7 @@ jobs:
             export POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' && \
             export SSO_DEFAULT_CLIENT_SECRET='${{ secrets.SSO_DEFAULT_CLIENT_SECRET }}' && \
             export PUBLIC_ORIGIN='${{ env.PUBLIC_ORIGIN }}' && \
+            export DEMO_MODE='${{ env.DEMO_MODE }}' && \
             docker compose pull && \
             docker compose up -d
           "
