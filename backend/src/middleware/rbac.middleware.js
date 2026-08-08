@@ -1,5 +1,12 @@
+/**
+ * Gerege Nexus Backend — App Gate & Role-Based Access Control (RBAC) Middleware
+ */
+
 const { queryOne } = require('../db/index');
 
+/**
+ * Gate route access by checking if current tenant has installed and enabled the app module
+ */
 function appGateMiddleware(appSlugOrId) {
   return async (req, res, next) => {
     const tenantId = req.tenantId || req.headers['x-tenant-id'];
@@ -28,6 +35,9 @@ function appGateMiddleware(appSlugOrId) {
   };
 }
 
+/**
+ * Enforce fine-grained RBAC permission check
+ */
 function requirePermission(permissionCode) {
   return async (req, res, next) => {
     if (req.user && req.user.isSuperAdmin) {

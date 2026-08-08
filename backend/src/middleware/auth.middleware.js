@@ -1,3 +1,7 @@
+/**
+ * Gerege Nexus Backend — Authentication & Session Authorization Middleware
+ */
+
 const jwt = require('jsonwebtoken');
 const { env } = require('../config/env');
 const { queryOne } = require('../db/index');
@@ -31,6 +35,7 @@ async function authMiddleware(req, res, next) {
     req.tenantId = req.user.tenantId || tenantIdHeader;
     return next();
   } catch (jwtErr) {
+    // Database Session Lookup Fallback
     const session = await queryOne(
       `SELECT s.user_id, s.tenant_id, u.email, u.full_name, u.role, s.expires_at
        FROM sessions s

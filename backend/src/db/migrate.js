@@ -1,3 +1,8 @@
+/**
+ * Gerege Nexus Backend — Automatic SQL Migration Engine
+ * Reads and applies sorted .sql migrations sequentially
+ */
+
 const fs = require('node:fs');
 const path = require('node:path');
 const { pool } = require('./index');
@@ -22,10 +27,11 @@ async function runMigrations() {
       .filter(f => f.endsWith('.sql'))
       .sort();
 
+    let appliedCount = 0;
     for (const file of files) {
       const { rows } = await client.query('SELECT version FROM schema_migrations WHERE version = $1', [file]);
       if (rows.length === 0) {
-        console.log(`[Migration] Executing: ${file}...`);
+        console.log(`[Migration] Applying ${file}...`);
         const filePath = path.join(migrationsDir, file);
         const sql = fs.readFileSync(filePath, 'utf8');
 
@@ -34,15 +40,21 @@ async function runMigrations() {
           await client.query(sql);
           await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [file]);
           await client.query('COMMIT');
-          console.log(`[Migration] Success: ${file}`);
+          console.log(`[Migration] Successfully applied ${file}`);
+          appliedCount++;
         } catch (err) {
           await client.query('ROLLBACK');
-          console.error(`[Migration] Error in ${file}:`, err);
+          console.error(`[Migration Failed] ${file}:`, err.message);
           throw err;
         }
       }
     }
-    console.log('[Migration] All database migrations up to date.');
+
+    if (appliedCount > 0) {
+      console.log(`[Migration] Applied ${appliedCount} new database migration(s).`);
+    } else {
+      console.log('[Migration] Database schema is up to date.');
+    }
   } finally {
     client.release();
   }
@@ -54,7 +66,7 @@ if (require.main === module) {
   runMigrations()
     .then(() => process.exit(0))
     .catch((err) => {
-      console.error('Migration failed:', err);
+      console.error('Migration execution failed:', err);
       process.exit(1);
     });
 }

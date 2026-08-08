@@ -1,12 +1,21 @@
+/**
+ * Gerege Nexus Backend — Structured JSON Logger
+ */
+
 const logger = {
-  info: (msg, meta) => {
-    console.log(JSON.stringify({ level: 'info', timestamp: new Date().toISOString(), message: msg, ...meta }));
+  info: (message, meta = {}) => {
+    console.log(JSON.stringify({ level: 'info', timestamp: new Date().toISOString(), message, ...meta }));
   },
-  warn: (msg, meta) => {
-    console.warn(JSON.stringify({ level: 'warn', timestamp: new Date().toISOString(), message: msg, ...meta }));
+  warn: (message, meta = {}) => {
+    console.warn(JSON.stringify({ level: 'warn', timestamp: new Date().toISOString(), message, ...meta }));
   },
-  error: (msg, meta) => {
-    console.error(JSON.stringify({ level: 'error', timestamp: new Date().toISOString(), message: msg, ...meta }));
+  error: (message, meta = {}) => {
+    console.error(JSON.stringify({ level: 'error', timestamp: new Date().toISOString(), message, ...meta }));
+  },
+  debug: (message, meta = {}) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(JSON.stringify({ level: 'debug', timestamp: new Date().toISOString(), message, ...meta }));
+    }
   },
 };
 
