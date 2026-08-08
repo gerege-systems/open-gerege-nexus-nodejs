@@ -14,8 +14,8 @@ router.get('/admin/access/overview', asyncHandler(async (req, res) => {
   const roles = await query('SELECT * FROM roles WHERE tenant_id = $1 OR is_system = true', [tenantId]);
   const permissions = await query('SELECT * FROM permissions ORDER BY category, code');
   const memberships = await query(
-    `SELECT tm.*, u.email, u.full_name
-     FROM tenant_memberships tm
+    `SELECT tm.*, u.email, u.name AS full_name
+     FROM memberships tm
      JOIN users u ON tm.user_id = u.id
      WHERE tm.tenant_id = $1`,
     [tenantId]

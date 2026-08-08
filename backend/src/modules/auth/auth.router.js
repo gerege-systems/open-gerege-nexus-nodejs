@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { randomInt } = require('node:crypto');
+const { randomInt, createHash } = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { env } = require('../../config/env');
@@ -19,7 +19,7 @@ router.post('/auth/login', asyncHandler(async (req, res) => {
   }
 
   const user = await queryOne(
-    `SELECT id, email, full_name, password_hash, role FROM users WHERE email = $1`,
+    `SELECT id, email, name, password_hash, is_admin FROM users WHERE email = $1`,
     [email]
   );
 
@@ -35,7 +35,7 @@ router.post('/auth/login', asyncHandler(async (req, res) => {
   }
 
   const tenant = await queryOne(
-    `SELECT tenant_id FROM tenant_memberships WHERE user_id = $1 LIMIT 1`,
+    `SELECT tenant_id FROM memberships WHERE user_id = $1 LIMIT 1`,
     [user.id]
   );
 
@@ -46,8 +46,8 @@ router.post('/auth/login', asyncHandler(async (req, res) => {
       sub: user.id,
       userId: user.id,
       email: user.email,
-      fullName: user.full_name,
-      role: user.role,
+      fullName: user.name,
+      role: user.is_admin ? 'admin' : 'user',
       tenantId: activeTenantId,
     },
     env.JWT_SECRET,
@@ -56,10 +56,10 @@ router.post('/auth/login', asyncHandler(async (req, res) => {
 
   const expiresAt = new Date(Date.now() + env.SESSION_TTL_HOURS * 3600 * 1000);
   await query(
-    `INSERT INTO sessions (token, user_id, tenant_id, expires_at)
+    `INSERT INTO sessions (token_hash, user_id, tenant_id, expires_at)
      VALUES ($1, $2, $3, $4)
-     ON CONFLICT (token) DO UPDATE SET expires_at = EXCLUDED.expires_at`,
-    [token, user.id, activeTenantId, expiresAt]
+     ON CONFLICT (token_hash) DO UPDATE SET expires_at = EXCLUDED.expires_at`,
+    [createHash('sha256').update(token).digest('hex'), user.id, activeTenantId, expiresAt]
   );
 
   res.json({
@@ -68,8 +68,8 @@ router.post('/auth/login', asyncHandler(async (req, res) => {
     user: {
       id: user.id,
       email: user.email,
-      fullName: user.full_name,
-      role: user.role,
+      fullName: user.name,
+      role: user.is_admin ? 'admin' : 'user',
       tenantId: activeTenantId,
     },
   });
@@ -126,7 +126,7 @@ router.post('/auth/logout', asyncHandler(async (req, res) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    await query('DELETE FROM sessions WHERE token = $1', [token]);
+    await query('DELETE FROM sessions WHERE token_hash = $1', [createHash('sha256').update(token).digest('hex')]);
   }
   res.json({ status: 'success', message: 'Logged out successfully' });
 }));

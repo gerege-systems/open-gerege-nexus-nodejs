@@ -3,6 +3,7 @@
  */
 
 const jwt = require('jsonwebtoken');
+const { createHash } = require('node:crypto');
 const { env } = require('../config/env');
 const { queryOne } = require('../db/index');
 
@@ -37,11 +38,11 @@ async function authMiddleware(req, res, next) {
   } catch (jwtErr) {
     // Database Session Lookup Fallback
     const session = await queryOne(
-      `SELECT s.user_id, s.tenant_id, u.email, u.full_name, u.role, s.expires_at
+      `SELECT s.user_id, s.tenant_id, u.email, u.name, u.is_admin, s.expires_at
        FROM sessions s
        JOIN users u ON s.user_id = u.id
-       WHERE s.token = $1 AND s.expires_at > CURRENT_TIMESTAMP`,
-      [token]
+       WHERE s.token_hash = $1 AND s.expires_at > CURRENT_TIMESTAMP AND s.revoked_at IS NULL`,
+      [createHash('sha256').update(token).digest('hex')]
     );
 
     if (!session) {
@@ -52,10 +53,10 @@ async function authMiddleware(req, res, next) {
     req.user = {
       id: session.user_id,
       email: session.email,
-      fullName: session.full_name,
-      role: session.role,
+      fullName: session.name,
+      role: session.is_admin ? 'admin' : 'user',
       tenantId: session.tenant_id || tenantIdHeader,
-      isSuperAdmin: session.role === 'admin',
+      isSuperAdmin: session.is_admin === true,
     };
     req.tenantId = req.user.tenantId || tenantIdHeader;
     next();
