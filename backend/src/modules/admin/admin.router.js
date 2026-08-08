@@ -12,7 +12,7 @@ router.get('/admin/access/overview', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
 
   const roles = await query('SELECT * FROM roles WHERE tenant_id = $1 OR is_system = true', [tenantId]);
-  const permissions = await query('SELECT * FROM permissions ORDER BY category, code');
+  const permissions = await query('SELECT * FROM permissions ORDER BY code');
   const memberships = await query(
     `SELECT tm.*, u.email, u.name AS full_name
      FROM memberships tm
@@ -89,14 +89,14 @@ router.put('/admin/access/roles/:id/permissions', asyncHandler(async (req, res) 
 // GET /api/v1/admin/email-verification/overview
 router.get('/admin/email-verification/overview', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
-  const clients = await query('SELECT id, name, key_prefix, status, hourly_limit, created_at FROM email_verify_clients WHERE tenant_id = $1', [tenantId]);
+  const clients = await query('SELECT id, name, key_prefix, status, hourly_limit, created_at FROM email_verification_clients WHERE tenant_id = $1', [tenantId]);
   res.json({ status: 'success', clients });
 }));
 
 // GET /api/v1/admin/email-verification/clients
 router.get('/admin/email-verification/clients', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || 'default-tenant';
-  const clients = await query('SELECT * FROM email_verify_clients WHERE tenant_id = $1', [tenantId]);
+  const clients = await query('SELECT * FROM email_verification_clients WHERE tenant_id = $1', [tenantId]);
   res.json({ status: 'success', clients });
 }));
 

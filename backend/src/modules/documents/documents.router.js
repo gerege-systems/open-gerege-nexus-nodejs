@@ -11,14 +11,14 @@ router.use('/documents', authMiddleware, appGateMiddleware('io.example.documents
 // GET /api/v1/documents
 router.get('/documents', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
-  const docs = await query('SELECT * FROM documents WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
+  const docs = await query('SELECT * FROM document_records WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
   res.json({ status: 'success', data: docs });
 }));
 
 // GET /api/v1/documents/:id
 router.get('/documents/:id', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
-  const doc = await queryOne('SELECT * FROM documents WHERE id = $1 AND tenant_id = $2', [req.params.id, tenantId]);
+  const doc = await queryOne('SELECT * FROM document_records WHERE id = $1 AND tenant_id = $2', [req.params.id, tenantId]);
   if (!doc) {
     res.status(404).json({ status: 'error', message: 'Document not found' });
     return;
@@ -29,8 +29,7 @@ router.get('/documents/:id', asyncHandler(async (req, res) => {
 // POST /api/v1/documents
 router.post('/documents', asyncHandler(async (req, res) => {
   const tenantId = req.tenantId;
-  const userId = req.user ? req.user.id : null;
-  const { title, content, type } = req.body;
+  const { title, type } = req.body;
 
   if (!title) {
     res.status(400).json({ status: 'error', message: 'Document title is required' });
@@ -38,10 +37,10 @@ router.post('/documents', asyncHandler(async (req, res) => {
   }
 
   const doc = await queryOne(
-    `INSERT INTO documents (tenant_id, created_by, title, content, type, status)
-     VALUES ($1, $2, $3, $4, $5, 'draft')
+    `INSERT INTO document_records (tenant_id, title, doc_type, status)
+     VALUES ($1, $2, $3, 'DRAFT')
      RETURNING *`,
-    [tenantId, userId, title, content || '', type || 'general']
+    [tenantId, title, type || 'general']
   );
 
   res.status(201).json({ status: 'success', data: doc });
