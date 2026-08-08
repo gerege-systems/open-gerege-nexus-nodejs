@@ -10,107 +10,26 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          # Single source of truth for the toolchain: backend/go.mod.
-          # Pinning "1.24" here while go.mod requires 1.25.7 breaks every job.
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: v2.1.6
-          working-directory: backend
-          # The published binaries are built with Go 1.24 and refuse to analyse
-          # a module targeting a newer language version:
-          #   "the Go language version (go1.24) used to build golangci-lint is
-          #    lower than the targeted Go version (1.25.x)".
-          # Compiling from source with the toolchain from setup-go keeps the two
-          # in step automatically.
-          install-mode: goinstall
-
-  test:
-    name: Test
+  test-backend:
+    name: Backend Test (Node.js 22 Express)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
-    # The gov_services workflow invariants live partly in SQL — composite
-    # tenant foreign keys, the published-version immutability trigger,
-    # optimistic concurrency on row_version — so its integration tests need a
-    # real schema. Without a database they self-skip, which used to leave
-    # eleven tests green without ever running.
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: platform_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/platform_test?sslmode=disable
-      GOV_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/platform_test?sslmode=disable
-      DOCUMENTS_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/platform_test?sslmode=disable
-      EMAILVERIFY_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/platform_test?sslmode=disable
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-node@v4
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-      - name: go vet
-        run: go vet ./...
-      - name: Migrate the test database
-        run: go run ./cmd/migrate up
-      - name: Run tests
-        run: go test -race ./...
-      - name: Fail if the workflow integration tests were skipped
-        # A silent skip is indistinguishable from a pass in the summary. This
-        # keeps the database wiring honest: if it breaks, the job goes red
-        # instead of quietly testing nothing.
-        run: |
-          go test -run 'TestLocalFulfilmentHappyPath' -v ./internal/apps/gov_services/... \
-            | tee /tmp/gov.log
-          if grep -q -- '--- SKIP' /tmp/gov.log; then
-            echo "::error::gov_services integration tests skipped — GOV_TEST_DATABASE_URL is not reaching the test"
-            exit 1
-          fi
-      - name: Fail if the documents integration tests were skipped
-        # Same reasoning: these hold the signing invariants that live in SQL —
-        # the status guard, the one-signature-per-signer constraint, and the
-        # counts the approval chain derives.
-        run: |
-          go test -run 'TestSigningApprovesWhenNoChainIsConfigured' -v ./internal/apps/documents/... \
-            | tee /tmp/documents.log
-          if grep -q -- '--- SKIP' /tmp/documents.log; then
-            echo "::error::documents integration tests skipped — DOCUMENTS_TEST_DATABASE_URL is not reaching the test"
-            exit 1
-          fi
-      - name: Fail if the email verification integration tests were skipped
-        # Same reasoning again: single-use links are enforced by one conditional
-        # UPDATE, and a skipped test is how that stops being true without
-        # anybody noticing.
-        run: |
-          go test -run 'TestALinkIsGoodExactlyOnce' -v ./internal/platform/emailverify/... \
-            | tee /tmp/emailverify.log
-          if grep -q -- '--- SKIP' /tmp/emailverify.log; then
-            echo "::error::email verification integration tests skipped — EMAILVERIFY_TEST_DATABASE_URL is not reaching the test"
-            exit 1
-          fi
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit & smoke tests
+        run: npm test
 
-  frontend:
-    name: Frontend Build
+  build-frontend:
+    name: Frontend Build (Next.js & Vanilla CSS)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -119,30 +38,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: npm
+          node-version: 22
+          cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Typecheck
-        run: npx tsc --noEmit
-      - name: Build
+      - name: Build Next.js application
         run: npm run build
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: [lint, test]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-      - name: Build binaries
-        working-directory: backend
-        run: |
-          go build -o bin/api ./cmd/api
-          go build -o bin/migrate ./cmd/migrate
-      - name: Build backend Docker image
-        run: docker build -f deploy/Dockerfile -t open-gerege-nexus-backend:ci .

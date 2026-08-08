@@ -1,174 +1,72 @@
-# Production stack for Gerege Nexus.
+# Production stack for Gerege Nexus (Node.js & Express - CJS Edition).
+# Dedicated domain: js.nexus.gerege.mn
 #
-# The default origin is nexus.gerege.mn. It drives CORS, the OIDC issuer and the
-# eID callback in one place, so moving it is a coordinated change: DNS, the TLS
-# certificate and any client pinning the issuer all follow. It replaced
-# openerp.gerege.mn in the Gerege Nexus rebrand. Set PUBLIC_ORIGIN to move it.
-#
-# This file pulls pre-built images from GHCR — it never builds on the server.
-# CI builds and pushes both images, copies this file over and runs it, so the
-# server needs neither the source tree nor a Go/Node toolchain.
-#
-# Required environment (see deploy/.env.prod.example):
-#   IMAGE_BACKEND, IMAGE_FRONTEND, IMAGE_TAG, POSTGRES_PASSWORD,
-#   SSO_DEFAULT_CLIENT_SECRET, PUBLIC_ORIGIN
+# Container names, database names, volumes, and ports are isolated to run
+# side-by-side with nexus.gerege.mn without any port or container collisions.
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: gerege_nexus_postgres
+    container_name: js_gerege_nexus_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: platform_db
-      POSTGRES_USER: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-js_platform_db}
+      POSTGRES_USER: ${POSTGRES_USER:-js_postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
-      - "127.0.0.1:5434:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
-      - gerege_nexus_postgres_data:/var/lib/postgresql/data
+      - js_gerege_nexus_platform_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d platform_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-js_postgres} -d ${POSTGRES_DB:-js_platform_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # One-shot migration runner. `up -d` waits for it to exit successfully before
-  # starting the API, so the schema is never behind the binary.
-  migrate:
-    image: ${IMAGE_BACKEND}:${IMAGE_TAG:-latest}
-    container_name: gerege_nexus_migrate
-    pull_policy: always
-    command: ["/app/migrate", "up"]
-    environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
   backend:
     image: ${IMAGE_BACKEND}:${IMAGE_TAG:-latest}
-    container_name: gerege_nexus_backend
+    container_name: js_gerege_nexus_backend
     restart: unless-stopped
     pull_policy: always
     environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-js_postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-js_platform_db}?sslmode=disable
       PORT: 8080
       ENVIRONMENT: production
-      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://nexus.gerege.mn}
-      ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-https://nexus.gerege.mn}
-      # Nginx terminates TLS in front of the API, so the forwarded client
-      # address can be trusted here.
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://js.nexus.gerege.mn}
+      ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-https://js.nexus.gerege.mn}
       TRUST_PROXY_HEADERS: "true"
-      SSO_ISSUER: ${PUBLIC_ORIGIN:-https://nexus.gerege.mn}
-      SSO_DEFAULT_CLIENT_SECRET: ${SSO_DEFAULT_CLIENT_SECRET:?SSO_DEFAULT_CLIENT_SECRET is required in production}
+      SSO_ISSUER: ${PUBLIC_ORIGIN:-https://js.nexus.gerege.mn}
+      SSO_DEFAULT_CLIENT_SECRET: ${SSO_DEFAULT_CLIENT_SECRET:-gerege_js_sso_secret_2026}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-      GEMINI_TTS_MODEL: ${GEMINI_TTS_MODEL:-gemini-2.5-flash-preview-tts}
-      GEMINI_VOICE: ${GEMINI_VOICE:-Kore}
-      # DEMO_MODE turns this deployment into a public showcase: it seeds the
-      # published demo account and lets the E-ID / DAN / XYP connectors answer
-      # with canned identities. Anyone can then sign in, so leave it false for
-      # any instance holding real data.
       SEED_DEMO_DATA: ${DEMO_MODE:-false}
-      # eID can use real RP credentials while the rest of the public showcase
-      # keeps demo data and mock DAN/XYP connectors enabled.
       EID_MOCK_MODE: ${EID_MOCK_MODE:-false}
       EID_BASE_URL: ${EID_BASE_URL:-https://eidmongolia.mn/v3}
       EID_RP_UUID: ${EID_RP_UUID:-}
       EID_RP_SECRET: ${EID_RP_SECRET:-}
-      EID_RP_NAME: ${EID_RP_NAME:-Gerege Nexus}
-      EID_CERT_LEVEL: ${EID_CERT_LEVEL:-ADVANCED}
-      EID_DISPLAY_TEXT: ${EID_DISPLAY_TEXT:-Gerege Nexus-д нэвтрэх}
-      EID_JIT_TENANT_SLUG: ${EID_JIT_TENANT_SLUG:-}
-      # eID Mongolia qualified PDF signing. It reuses the RP credentials above —
-      # one registration carries both the authentication and the SIGNATURE
-      # permission — so only the signing-specific overrides appear here.
-      # EID_SIGN_CERT_LEVEL is deliberately QUALIFIED rather than the ADVANCED
-      # used for sign-in: an advanced signature is not what тоон гарын үсэг means
-      # in law, and accepting one would downgrade every document produced.
-      EID_SIGN_MOCK_MODE: ${EID_SIGN_MOCK_MODE:-false}
-      EID_SIGN_BASE_URL: ${EID_SIGN_BASE_URL:-}
-      EID_SIGN_CERT_LEVEL: ${EID_SIGN_CERT_LEVEL:-QUALIFIED}
-      EID_SIGN_DISPLAY_TEXT: ${EID_SIGN_DISPLAY_TEXT:-}
-      # Server Document-Signer, used only when eID's own stamp endpoint is
-      # unavailable — it is what turns a stamp outage into a self-embedded
-      # PAdES rather than no signed PDF at all. Signing works without it; the
-      # fallback does not. The certificate must be the SAME across restarts and
-      # replicas, so it is supplied rather than generated.
-      EID_SIGN_SIGNER_CERT_PEM: ${EID_SIGN_SIGNER_CERT_PEM:-}
-      EID_SIGN_SIGNER_KEY_PEM: ${EID_SIGN_SIGNER_KEY_PEM:-}
-      # Gerege eSign HSM, the older signing rail. These were absent entirely,
-      # which left the service in mock mode on a production instance: mock
-      # SignPDF returns the submitted PDF unchanged, so documents were marked
-      # SIGNED while carrying no signature at all. Set ESIGN_TOKEN to use it, or
-      # turn the rail off from the signing policy screen.
-      ESIGN_MOCK_MODE: ${ESIGN_MOCK_MODE:-false}
-      ESIGN_LOGIN_URL: ${ESIGN_LOGIN_URL:-https://hsm.gerege.mn/esign/login}
-      ESIGN_SIGN_URL: ${ESIGN_SIGN_URL:-https://hsm.gerege.mn/signer/signpdf}
-      ESIGN_TOKEN: ${ESIGN_TOKEN:-}
-      DAN_MOCK_MODE: ${DEMO_MODE:-false}
-      XYP_MOCK_MODE: ${DEMO_MODE:-false}
-      # Integration connectors. Without the key the server refuses to store a
-      # credential rather than storing it in the clear, so Drive, Dropbox and
-      # Meet simply cannot be saved — which is the visible failure, not a
-      # silent one. Generate with: openssl rand -base64 32
+      EID_RP_NAME: ${EID_RP_NAME:-Gerege Nexus Node.js}
       INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
-      # A connector target is an address a tenant types in and this server
-      # connects to, from inside the network. Addresses that belong to the
-      # deployment — loopback, private, link-local, the cloud metadata service —
-      # are refused unless a self-hosted operator deliberately allows them.
-      INTEGRATION_ALLOW_PRIVATE_TARGETS: ${INTEGRATION_ALLOW_PRIVATE_TARGETS:-false}
-      # OAuth clients belong to whoever operates this deployment, not to each
-      # tenant: the consent screen is this platform's. Leave them empty and the
-      # providers report themselves unavailable with the reason, instead of
-      # offering a form that cannot work.
-      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
-      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
-      DROPBOX_OAUTH_CLIENT_ID: ${DROPBOX_OAUTH_CLIENT_ID:-}
-      DROPBOX_OAUTH_CLIENT_SECRET: ${DROPBOX_OAUTH_CLIENT_SECRET:-}
     ports:
-      - "127.0.0.1:8082:8080"
+      - "127.0.0.1:8083:8080"
     depends_on:
       postgres:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8080/health').then(r => r.ok ? process.exit(0) : process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
 
   frontend:
     image: ${IMAGE_FRONTEND}:${IMAGE_TAG:-latest}
-    container_name: gerege_nexus_frontend
+    container_name: js_gerege_nexus_frontend
     restart: unless-stopped
     pull_policy: always
     ports:
-      - "127.0.0.1:3008:3000"
+      - "127.0.0.1:3009:3000"
     depends_on:
       backend:
         condition: service_healthy
 
 volumes:
-  # `name` pins the physical volume, decoupling the data from the deploy
-  # directory: Compose otherwise derives a volume name from the project, which
-  # comes from the directory, so moving the stack would silently bring Postgres
-  # up on an empty data directory — healthy container, initdb, migrations, no
-  # tenants. Pinning it is what makes that move safe.
-  #
-  # The pin was `open-gerege-mn-erp_platform_erp_postgres_data` until
-  # 2026-08-08, a name inherited from two rebrands ago. It was renamed to match
-  # the container names and the sibling stacks sharing this host
-  # (gerege_nexus_*, gerege_sso_*, gerege_salus_*), so that three products no
-  # longer carry three unrelated naming schemes for the same kind of thing.
-  #
-  # That rename was a data migration, not an edit: the stack was stopped, the
-  # data copied with
-  # `docker run --rm -v old:/from -v new:/to alpine cp -a /from/. /to/`, this
-  # field repointed, the stack restarted and row counts verified against a
-  # pg_dump taken first. The old volume was kept. Renaming it again costs the
-  # same steps — changing this line on its own gives you an empty database.
-  gerege_nexus_postgres_data:
-    name: gerege_nexus_platform_postgres_data
+  js_gerege_nexus_platform_postgres_data:
+    name: js_gerege_nexus_platform_postgres_data

@@ -1,42 +1,7 @@
-name: Deploy to Production (nexus.gerege.mn)
+name: Deploy to Production (js.nexus.gerege.mn)
 
-# Lint, tests and builds live in ci.yml. This workflow publishes images for an
-# already-green commit and rolls them out — and now actually waits for that to
-# be true.
-#
-# It used to trigger on push to main, which meant it raced CI rather than
-# following it: a merge started both at once and the rollout was usually done
-# before the tests finished. Two pull requests that are each green can still
-# break main together, and that is precisely the case where an automatic deploy
-# should not happen. It is now chained to CI's completion and runs only on
-# success.
-#
-# Required repository secrets:
-#   DEPLOY_SSH_KEY              private key for the deploy user (required)
-#   DEPLOY_HOST                 defaults to nexus.gerege.mn
-#   DEPLOY_USER                 defaults to deploy
-#   DEPLOY_PORT                 defaults to 22
-#   POSTGRES_PASSWORD           database password on the server
-#   SSO_DEFAULT_CLIENT_SECRET   OAuth2 secret for the built-in client
-#   GEMINI_API_KEY              Google Gemini API key (AI degrades safely if empty)
-#   EID_RP_UUID                 eID Mongolia relying-party UUID
-#   EID_RP_SECRET               eID Mongolia relying-party secret
-#   ESIGN_TOKEN                 Gerege eSign HSM credential (optional)
-#   INTEGRATION_ENCRYPTION_KEY  seals connector credentials at rest; without it
-#                               Drive/Dropbox/Meet cannot be saved at all
-#   GOOGLE_OAUTH_CLIENT_ID      OAuth client for the Drive and Meet connectors
-#   GOOGLE_OAUTH_CLIENT_SECRET  (optional: absent, they report unavailable)
-#   DROPBOX_OAUTH_CLIENT_ID     OAuth client for the Dropbox connector
-#   DROPBOX_OAUTH_CLIENT_SECRET (optional: absent, it reports unavailable)
-#   EID_SIGN_SIGNER_CERT_PEM    server Document-Signer certificate, PEM (optional)
-#   EID_SIGN_SIGNER_KEY_PEM     its ECDSA private key, PEM (optional)
-#
-# Repository variables:
-#   PUBLIC_ORIGIN               defaults to https://nexus.gerege.mn
-#   DEMO_MODE                   "true" seeds the demo account and mock connectors
 on:
   workflow_run:
-    # Must match ci.yml's `name:` exactly.
     workflows: ["CI"]
     types: [completed]
     branches: [main]
@@ -48,24 +13,15 @@ on:
 
 permissions:
   contents: read
-  # Without this the GHCR push fails with
-  # "denied: installation not allowed to Write the repository".
   packages: write
 
 concurrency:
-  group: production-deploy
+  group: js-production-deploy
   cancel-in-progress: false
 
 env:
-  # Repository variables, not secrets: the `secrets` context is not available
-  # in workflow-level env (or in a job name), which fails workflow validation
-  # outright — the run never starts.
-  PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN || 'https://nexus.gerege.mn' }}
-  # Repository variable (Settings → Variables), not a secret. "true" turns the
-  # target into a public demo: seeded demo account plus mock E-ID/DAN/XYP.
+  PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN || 'https://js.nexus.gerege.mn' }}
   DEMO_MODE: ${{ vars.DEMO_MODE || 'false' }}
-  EID_MOCK_MODE: ${{ vars.EID_MOCK_MODE || 'false' }}
-  EID_JIT_TENANT_SLUG: ${{ vars.EID_JIT_TENANT_SLUG || 'demo' }}
 
 jobs:
   build-and-push:
@@ -96,189 +52,58 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # GHCR rejects uppercase paths; github.repository keeps the owner casing.
       - name: Compute image name
-        id: meta
-        run: echo "image=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/${{ matrix.component }}" >> "$GITHUB_OUTPUT"
+        id: image
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/${REPO_LOWER}-${{ matrix.component }}" >> "$GITHUB_OUTPUT"
+          echo "tag=${{ inputs.tag || github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
-          file: ${{ matrix.context }}/${{ matrix.dockerfile }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            ${{ steps.meta.outputs.image }}:latest
-            ${{ steps.meta.outputs.image }}:${{ github.event.workflow_run.head_sha || github.sha }}
-          # NEXT_PUBLIC_* is inlined into the client bundle at build time, so
-          # the production API URL has to be known here, not at run time.
+            ${{ steps.image.outputs.name }}:${{ steps.image.outputs.tag }}
+            ${{ steps.image.outputs.name }}:latest
           build-args: |
             NEXT_PUBLIC_API_URL=${{ env.PUBLIC_ORIGIN }}/api/v1
-          cache-from: type=gha,scope=${{ matrix.component }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
-    name: Roll out to production
+    name: Deploy to Server (js.nexus.gerege.mn)
+    needs: build-and-push
     runs-on: ubuntu-latest
-    needs: [build-and-push]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
 
-      # Fork clones have no deployment secrets; skip instead of failing the run.
-      - name: Check deployment secrets
-        id: guard
-        run: |
-          if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
-            echo "::warning::DEPLOY_SSH_KEY is not configured — skipping rollout."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Resolve image tag
-        id: tag
-        run: echo "value=${{ github.event.inputs.tag || github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
-
-      - name: Copy compose file to the server
-        if: steps.guard.outputs.ready == 'true'
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST || 'nexus.gerege.mn' }}
-          username: ${{ secrets.DEPLOY_USER || 'deploy' }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: docker-compose.prod.yml
-          target: /opt/open-gerege-nexus
-
-      - name: Pull images, migrate and restart
-        if: steps.guard.outputs.ready == 'true'
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Deploy stack via SSH
         env:
-          IMAGE_TAG: ${{ steps.tag.outputs.value }}
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          SSO_DEFAULT_CLIENT_SECRET: ${{ secrets.SSO_DEFAULT_CLIENT_SECRET }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          EID_RP_UUID: ${{ secrets.EID_RP_UUID }}
-          EID_RP_SECRET: ${{ secrets.EID_RP_SECRET }}
-          EID_BASE_URL: ${{ vars.EID_BASE_URL || 'https://eidmongolia.mn/v3' }}
-          # Gerege eSign HSM credential. Left empty the HSM rail reports itself
-          # unconfigured and refuses to sign, rather than silently returning the
-          # document unchanged as mock mode did.
-          ESIGN_TOKEN: ${{ secrets.ESIGN_TOKEN }}
-          INTEGRATION_ENCRYPTION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}
-          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
-          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
-          DROPBOX_OAUTH_CLIENT_ID: ${{ secrets.DROPBOX_OAUTH_CLIENT_ID }}
-          DROPBOX_OAUTH_CLIENT_SECRET: ${{ secrets.DROPBOX_OAUTH_CLIENT_SECRET }}
-          # Server Document-Signer for the PAdES fallback. Optional: signing
-          # works without it, only the stamp-outage fallback does not.
-          EID_SIGN_SIGNER_CERT_PEM: ${{ secrets.EID_SIGN_SIGNER_CERT_PEM }}
-          EID_SIGN_SIGNER_KEY_PEM: ${{ secrets.EID_SIGN_SIGNER_KEY_PEM }}
-          PUBLIC_ORIGIN: ${{ env.PUBLIC_ORIGIN }}
-          DEMO_MODE: ${{ env.DEMO_MODE }}
-          EID_MOCK_MODE: ${{ env.EID_MOCK_MODE }}
-          EID_JIT_TENANT_SLUG: ${{ env.EID_JIT_TENANT_SLUG }}
-        with:
-          host: ${{ secrets.DEPLOY_HOST || 'nexus.gerege.mn' }}
-          username: ${{ secrets.DEPLOY_USER || 'deploy' }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: IMAGE_TAG,REGISTRY_USER,REGISTRY_TOKEN,REPO,POSTGRES_PASSWORD,SSO_DEFAULT_CLIENT_SECRET,GEMINI_API_KEY,EID_RP_UUID,EID_RP_SECRET,EID_BASE_URL,ESIGN_TOKEN,EID_SIGN_SIGNER_CERT_PEM,EID_SIGN_SIGNER_KEY_PEM,PUBLIC_ORIGIN,DEMO_MODE,EID_MOCK_MODE,EID_JIT_TENANT_SLUG,INTEGRATION_ENCRYPTION_KEY,GOOGLE_OAUTH_CLIENT_ID,GOOGLE_OAUTH_CLIENT_SECRET,DROPBOX_OAUTH_CLIENT_ID,DROPBOX_OAUTH_CLIENT_SECRET
-          script: |
-            set -euo pipefail
-            APP_DIR=/opt/open-gerege-nexus
-            mkdir -p "$APP_DIR"
-            cd "$APP_DIR"
-
-            REPO_LOWER=$(echo "$REPO" | tr '[:upper:]' '[:lower:]')
-
-            # Written fresh every deploy so the server never drifts from CI.
-            umask 077
-            cat > .env <<EOF
-            IMAGE_BACKEND=ghcr.io/${REPO_LOWER}/backend
-            IMAGE_FRONTEND=ghcr.io/${REPO_LOWER}/frontend
-            IMAGE_TAG=${IMAGE_TAG}
-            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-            SSO_DEFAULT_CLIENT_SECRET=${SSO_DEFAULT_CLIENT_SECRET}
-            GEMINI_API_KEY=${GEMINI_API_KEY}
-            EID_RP_UUID=${EID_RP_UUID}
-            EID_RP_SECRET=${EID_RP_SECRET}
-            EID_BASE_URL=${EID_BASE_URL}
-            ESIGN_TOKEN=${ESIGN_TOKEN}
-            EID_SIGN_SIGNER_CERT_PEM=${EID_SIGN_SIGNER_CERT_PEM}
-            EID_SIGN_SIGNER_KEY_PEM=${EID_SIGN_SIGNER_KEY_PEM}
-            PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
-            DEMO_MODE=${DEMO_MODE}
-            EID_MOCK_MODE=${EID_MOCK_MODE}
-            EID_JIT_TENANT_SLUG=${EID_JIT_TENANT_SLUG}
-            INTEGRATION_ENCRYPTION_KEY=${INTEGRATION_ENCRYPTION_KEY}
-            GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
-            GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
-            DROPBOX_OAUTH_CLIENT_ID=${DROPBOX_OAUTH_CLIENT_ID}
-            DROPBOX_OAUTH_CLIENT_SECRET=${DROPBOX_OAUTH_CLIENT_SECRET}
-            EOF
-
-            echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
-
-            docker compose -f docker-compose.prod.yml pull
-            # A previously interrupted Compose recreate can leave a stopped
-            # container holding one of our explicit container names. Remove
-            # only the stateless application services before bringing the new
-            # revision up; PostgreSQL and its production volume stay running.
-            # Do not ask Compose for a graceful stop here: a wedged frontend
-            # previously held that wait until the SSH action's 10-minute
-            # timeout. These containers are stateless and safe to force-remove.
-            set +e
-            timeout 30s docker rm -f gerege_nexus_backend gerege_nexus_frontend gerege_nexus_migrate
-            REMOVE_STATUS=$?
-            set -e
-            if [ "$REMOVE_STATUS" -eq 124 ]; then
-              echo "Docker did not remove stateless containers within 30s; collecting host state."
-              docker ps -a --no-trunc || true
-              systemctl --no-pager --full status docker containerd || true
-              echo "Restarting the wedged Docker runtime; the database volume is not removed."
-              timeout 90s sudo -n systemctl restart docker
-              for i in $(seq 1 30); do
-                docker info >/dev/null 2>&1 && break
-                sleep 2
-              done
-              docker info >/dev/null
-              timeout 30s docker rm -f gerege_nexus_backend gerege_nexus_frontend gerege_nexus_migrate 2>/dev/null || true
-            elif [ "$REMOVE_STATUS" -ne 0 ]; then
-              # Missing containers are expected after an interrupted rollout.
-              echo "Some stateless containers were already absent; continuing."
-            fi
-            # `up -d` runs the migrate service to completion first, then swaps
-            # the API and frontend over.
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
-
-            docker logout ghcr.io
-            docker image prune -f
-
-      - name: Verify the deployment is healthy
-        if: steps.guard.outputs.ready == 'true'
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST || 'nexus.gerege.mn' }}
-          username: ${{ secrets.DEPLOY_USER || 'deploy' }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -euo pipefail
-            # The API is published on loopback only; nginx fronts it publicly.
-            for i in $(seq 1 30); do
-              if curl -fsS http://127.0.0.1:8082/health > /dev/null; then
-                echo "backend healthy"
-                curl -fsS http://127.0.0.1:8082/ready > /dev/null && echo "database reachable"
-                exit 0
-              fi
-              sleep 5
-            done
-            echo "::error::backend did not become healthy within 150s"
-            docker compose -f /opt/open-gerege-nexus/docker-compose.prod.yml logs --tail=80 backend migrate
-            exit 1
+          HOST: ${{ secrets.DEPLOY_HOST || 'js.nexus.gerege.mn' }}
+          USER: ${{ secrets.DEPLOY_USER || 'deploy' }}
+          PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+          TAG: ${{ inputs.tag || github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -p "$PORT" "$USER@$HOST" "mkdir -p ~/app-js"
+          scp -o StrictHostKeyChecking=no -P "$PORT" docker-compose.prod.yml "$USER@$HOST:~/app-js/docker-compose.yml"
+          scp -o StrictHostKeyChecking=no -P "$PORT" deploy/nginx/js.nexus.gerege.mn.conf "$USER@$HOST:~/app-js/js.nexus.gerege.mn.conf"
+          
+          ssh -o StrictHostKeyChecking=no -p "$PORT" "$USER@$HOST" "
+            cd ~/app-js && \
+            export IMAGE_BACKEND=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')-backend && \
+            export IMAGE_FRONTEND=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')-frontend && \
+            export IMAGE_TAG='$TAG' && \
+            export POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' && \
+            export SSO_DEFAULT_CLIENT_SECRET='${{ secrets.SSO_DEFAULT_CLIENT_SECRET }}' && \
+            export PUBLIC_ORIGIN='${{ env.PUBLIC_ORIGIN }}' && \
+            docker compose pull && \
+            docker compose up -d
+          "
