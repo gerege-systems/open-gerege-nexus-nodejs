@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const { env } = require('./config/env');
 const { pool } = require('./db/index');
 const { runMigrations } = require('./db/migrate');
+const { seedDemoData } = require('./db/seed');
 const { syncCatalogToDatabase } = require('./platform/appcatalog');
 const { errorMiddleware } = require('./middleware/error.middleware');
 const { logger } = require('./utils/logger');
@@ -97,6 +98,9 @@ async function startServer() {
 
     // 1. Run database migrations
     await runMigrations();
+
+    // Demo credentials are opt-in, including in production.
+    await seedDemoData();
 
     // 2. Sync Catalog
     await syncCatalogToDatabase();

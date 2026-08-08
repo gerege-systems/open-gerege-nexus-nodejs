@@ -18,6 +18,7 @@ const env = {
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : ['http://localhost:3000'],
   CATALOG_PATH: process.env.CATALOG_PATH || path.resolve(process.cwd(), '../catalog/apps.json'),
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+  SEED_DEMO_DATA: /^(1|true|yes)$/i.test(process.env.SEED_DEMO_DATA || ''),
 };
 
 module.exports = { env };
