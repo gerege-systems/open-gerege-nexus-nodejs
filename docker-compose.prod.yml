@@ -2,7 +2,7 @@
 # Dedicated domain: js.nexus.gerege.mn
 #
 # Container names, database names, volumes, and ports are isolated to run
-# side-by-side with nexus.gerege.mn without any port or container collisions.
+# side-by-side with nexus.gerege.mn, salus.gerege.mn, and sso.gerege.mn without any collisions.
 
 services:
   postgres:
@@ -14,7 +14,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-js_postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
-      - "127.0.0.1:5435:5432"
+      - "127.0.0.1:5437:5432"
     volumes:
       - js_gerege_nexus_platform_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -46,7 +46,7 @@ services:
       EID_RP_NAME: ${EID_RP_NAME:-Gerege Nexus Node.js}
       INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
     ports:
-      - "127.0.0.1:8083:8080"
+      - "127.0.0.1:8084:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,7 +62,7 @@ services:
     restart: unless-stopped
     pull_policy: always
     ports:
-      - "127.0.0.1:3009:3000"
+      - "127.0.0.1:3010:3000"
     depends_on:
       backend:
         condition: service_healthy
