@@ -1,6 +1,6 @@
-const bcrypt = require('bcryptjs');
-const { pool } = require('./index');
-const { env } = require('../config/env');
+import bcrypt from 'bcryptjs';
+import { pool } from './index.js';
+import { env } from '../config/env.js';
 
 async function seedDemoData() {
   if (!env.SEED_DEMO_DATA) return;
@@ -35,4 +35,4 @@ async function seedDemoData() {
   }
 }
 
-module.exports = { seedDemoData };
+export { seedDemoData };

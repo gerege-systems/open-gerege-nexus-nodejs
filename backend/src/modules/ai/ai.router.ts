@@ -1,8 +1,8 @@
-const { Router } = require('express');
-const { env } = require('../../config/env');
-const { asyncHandler } = require('../../utils/asyncHandler');
-const { authMiddleware } = require('../../middleware/auth.middleware');
-const { createRateLimiter } = require('../../middleware/rateLimit');
+import { Router } from 'express';
+import { env } from '../../config/env.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
+import { authMiddleware } from '../../middleware/auth.middleware.js';
+import { createRateLimiter } from '../../middleware/rateLimit.js';
 
 const router = Router();
 const aiLimiter = createRateLimiter({ windowMs: 60000, max: 20 });
@@ -62,4 +62,4 @@ router.get('/ai/stock-forecast', asyncHandler(async (req, res) => {
   });
 }));
 
-module.exports = router;
+export default router;

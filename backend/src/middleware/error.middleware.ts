@@ -2,7 +2,7 @@
  * Gerege Nexus Backend — Global Error Middleware
  */
 
-const { logger } = require('../utils/logger');
+import { logger } from '../utils/logger.js';
 
 function errorMiddleware(err, req, res, next) {
   const statusCode = err.statusCode || err.status || 500;
@@ -20,4 +20,4 @@ function errorMiddleware(err, req, res, next) {
   });
 }
 
-module.exports = { errorMiddleware };
+export { errorMiddleware };

@@ -2,10 +2,10 @@
  * Gerege Nexus Backend — Authentication & Session Authorization Middleware
  */
 
-const jwt = require('jsonwebtoken');
-const { createHash } = require('node:crypto');
-const { env } = require('../config/env');
-const { queryOne } = require('../db/index');
+import jwt from 'jsonwebtoken';
+import { createHash } from 'node:crypto';
+import { env } from '../config/env.js';
+import { queryOne } from '../db/index.js';
 
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -25,6 +25,9 @@ async function authMiddleware(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET);
+    if (typeof decoded === 'string') {
+      throw new Error('Invalid JWT payload');
+    }
     req.user = {
       id: decoded.sub || decoded.userId,
       email: decoded.email,
@@ -71,7 +74,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = {
+export {
   authMiddleware,
   requireAdmin,
 };

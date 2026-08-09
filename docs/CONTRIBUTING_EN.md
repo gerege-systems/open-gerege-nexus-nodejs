@@ -12,7 +12,7 @@ Thank you for your interest in contributing to **Gerege Nexus** (`open-gerege-ne
 
 ## Technical Stack Guidelines
 
-- **Backend**: Node.js 22 LTS, Express.js CommonJS (CJS), native `pg` connection pool, zero heavy ORMs.
+- **Backend**: Node.js 22 LTS, Express.js, TypeScript ESM, native `pg` connection pool, zero heavy ORMs.
 - **Frontend**: Next.js 16 (React 19) App Router, Pure Vanilla CSS (zero Tailwind CSS dependencies).
 - **Database**: PostgreSQL with raw SQL migration scripts (`backend/db/migrations/`).
 

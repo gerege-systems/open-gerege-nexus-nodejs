@@ -1,10 +1,10 @@
 /**
  * Gerege Nexus Backend — Environment Configuration
- * CommonJS (CJS) Standard
+ * TypeScript ESM configuration
  */
 
-const dotenv = require('dotenv');
-const path = require('node:path');
+import dotenv from 'dotenv';
+import path from 'node:path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
 dotenv.config();
@@ -21,4 +21,4 @@ const env = {
   SEED_DEMO_DATA: /^(1|true|yes)$/i.test(process.env.SEED_DEMO_DATA || ''),
 };
 
-module.exports = { env };
+export { env };

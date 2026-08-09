@@ -93,7 +93,7 @@ Node.js 22 LTS & Express.js дээр суурилсан хөнгөн авсаа�
 
 ### 3. Төрийн цахим дэд бүтцийн интеграци
 
-- **ХУР — Төрийн мэдээлэл солилцооны систем** (`src/modules/integrations/integrations.router.js`):
+- **ХУР — Төрийн мэдээлэл солилцооны систем** (`src/modules/integrations/integrations.router.ts`):
   иргэний бүртгэл (`WS100101`), хуулийн этгээдийн баталгаажуулалт (`WS100201`).
 - **Үндэсний E-ID ба ДАН** ([`developer.gerege.mn`](https://developer.gerege.mn),
   [`eidmongolia.mn`](https://eidmongolia.mn)) — тоон гарын үсэг (PKI), нэг
@@ -123,12 +123,12 @@ Node.js 22 LTS & Express.js дээр суурилсан хөнгөн авсаа�
 ```
 backend/
   src/
-    config/           Тохиргоо (env.js)
-    db/               PostgreSQL pool (index.js) ба SQL миграци (migrate.js)
+    config/           Тохиргоо (env.ts)
+    db/               PostgreSQL pool (index.ts) ба SQL миграци (migrate.ts)
     middleware/       Auth, RBAC, RateLimit, Error хянагчууд
     modules/          Бизнес модулиудын Express рутерууд
     platform/         Апп каталогийн синк
-    server.js         Express серверийг асаах үндсэн файл
+    server.ts         Express серверийг асаах үндсэн файл
   db/migrations/      SQL миграцууд
 frontend/             Next.js 16 (App Router) + Pure Vanilla CSS
 catalog/              Апп сторын каталог ба manifest-ууд

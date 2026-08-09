@@ -1,8 +1,8 @@
-const { Router } = require('express');
-const { query, queryOne } = require('../../db/index');
-const { asyncHandler } = require('../../utils/asyncHandler');
-const { authMiddleware } = require('../../middleware/auth.middleware');
-const { appGateMiddleware } = require('../../middleware/rbac.middleware');
+import { Router } from 'express';
+import { query, queryOne } from '../../db/index.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
+import { authMiddleware } from '../../middleware/auth.middleware.js';
+import { appGateMiddleware } from '../../middleware/rbac.middleware.js';
 
 const router = Router();
 
@@ -46,4 +46,4 @@ router.post('/documents', asyncHandler(async (req, res) => {
   res.status(201).json({ status: 'success', data: doc });
 }));
 
-module.exports = router;
+export default router;

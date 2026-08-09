@@ -1,11 +1,11 @@
-const { Router } = require('express');
-const { randomInt, createHash } = require('node:crypto');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { env } = require('../../config/env');
-const { query, queryOne } = require('../../db/index');
-const { asyncHandler } = require('../../utils/asyncHandler');
-const { authMiddleware } = require('../../middleware/auth.middleware');
+import { Router } from 'express';
+import { randomInt, createHash } from 'node:crypto';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { env } from '../../config/env.js';
+import { query, queryOne } from '../../db/index.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
+import { authMiddleware } from '../../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -186,4 +186,4 @@ router.get('/menus', authMiddleware, asyncHandler(async (req, res) => {
   res.json({ status: 'success', menus });
 }));
 
-module.exports = router;
+export default router;

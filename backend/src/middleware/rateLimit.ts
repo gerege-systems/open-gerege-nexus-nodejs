@@ -3,7 +3,13 @@
  * Sliding window rate limiting without external dependencies
  */
 
-function createRateLimiter(options = {}) {
+interface RateLimitOptions {
+  windowMs?: number;
+  max?: number;
+  message?: string;
+}
+
+function createRateLimiter(options: RateLimitOptions = {}) {
   const {
     windowMs = 60000,
     max = 60,
@@ -49,4 +55,4 @@ function createRateLimiter(options = {}) {
   };
 }
 
-module.exports = { createRateLimiter };
+export { createRateLimiter };

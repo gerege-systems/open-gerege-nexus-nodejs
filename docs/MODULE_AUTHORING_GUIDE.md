@@ -12,24 +12,24 @@ Welcome to the **open-gerege-nexus** Module Authoring Guide! This guide explains
 
 ## Module architecture overview
 
-In `open-gerege-nexus`, business modules are written as CommonJS Express Routers under `backend/src/modules/`.
+In `open-gerege-nexus`, business modules are written as TypeScript ESM Express routers under `backend/src/modules/`.
 
 Each module consists of:
 1. Manifest JSON definition in `catalog/manifests/<app_slug>.json`
-2. Express Router handling endpoints in `backend/src/modules/<app_slug>/<app_slug>.router.js`
+2. Express Router handling endpoints in `backend/src/modules/<app_slug>/<app_slug>.router.ts`
 
 ---
 
 ## Step by step: creating a new module
 
-### Step 1: Create Express Router (`backend/src/modules/invoices/invoices.router.js`)
+### Step 1: Create Express Router (`backend/src/modules/invoices/invoices.router.ts`)
 
-```javascript
-const { Router } = require('express');
-const { query, queryOne } = require('../../db/index');
-const { asyncHandler } = require('../../utils/asyncHandler');
-const { authMiddleware } = require('../../middleware/auth.middleware');
-const { appGateMiddleware } = require('../../middleware/rbac.middleware');
+```typescript
+import { Router } from 'express';
+import { query, queryOne } from '../../db/index.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
+import { authMiddleware } from '../../middleware/auth.middleware.js';
+import { appGateMiddleware } from '../../middleware/rbac.middleware.js';
 
 const router = Router();
 
@@ -59,13 +59,13 @@ router.post('/invoices', asyncHandler(async (req, res) => {
   res.status(201).json({ status: 'success', data: invoice });
 }));
 
-module.exports = router;
+export default router;
 ```
 
-### Step 2: Register Router in `backend/src/server.js`
+### Step 2: Register Router in `backend/src/server.ts`
 
-```javascript
-const invoicesRouter = require('./modules/invoices/invoices.router');
+```typescript
+import invoicesRouter from './modules/invoices/invoices.router.js';
 
 // Mount on apiV1
 apiV1.use(invoicesRouter);
