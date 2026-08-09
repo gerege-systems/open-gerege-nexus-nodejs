@@ -11,7 +11,7 @@ infrastructure (DAN, E-ID, XYP / ХУР).
 systems, users and data meet. The platform itself is not tied to one sector —
 the modules running on it are what make a deployment specific.
 
-Modules run on a Node.js 22 LTS & Express.js (CommonJS) backend, while a PostgreSQL-backed app
+Modules run on a Node.js 22 LTS, Express.js, and TypeScript ESM backend, while a PostgreSQL-backed app
 store decides which apps are active per tenant — module separation without the
 network hops or operational cost of microservices.
 

@@ -43,9 +43,9 @@
 
 1. **Салбар үүсгэх** — `git checkout -b feature/amazing-feature`.
 2. **Код бичих хэв маягийг мөрдөх**:
-   - Backend: Node.js 22 LTS, Express.js CommonJS (CJS) стандартын бичиглэл.
+   - Backend: Node.js 22 LTS, Express.js, TypeScript ESM стандартын бичиглэл.
    - Frontend: Next.js 16 App Router, Pure Vanilla CSS (Tailwind CSS ашиглахгүй).
-3. **Тест бичих** — backend-д нэмэгдсэн логик бүрт `test/server.test.js` тест дагалдана.
+3. **Тест бичих** — backend-д нэмэгдсэн логик бүрт `test/server.test.ts` тест дагалдана.
 4. **Шалгалтуудыг ажиллуулах**:
 
    ```bash
@@ -69,7 +69,7 @@
 ## Шинэ бизнес модуль нэмэх
 
 1. `backend/src/modules/<module_name>/` дор Express рутер үүсгэнэ.
-2. `backend/src/server.js` дээр рутерээ бүртгэнэ.
+2. `backend/src/server.ts` дээр рутерээ бүртгэнэ.
 3. `catalog/manifests/<slug>.json` manifest файл болон `catalog/apps.json` мета датаг шинэчилнэ.
 4. `frontend/app/<module_name>/page.jsx` дор дэлгэц нэмнэ.
 

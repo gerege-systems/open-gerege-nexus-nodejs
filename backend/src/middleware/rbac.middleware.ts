@@ -2,7 +2,7 @@
  * Gerege Nexus Backend — App Gate & Role-Based Access Control (RBAC) Middleware
  */
 
-const { queryOne } = require('../db/index');
+import { queryOne } from '../db/index.js';
 
 /**
  * Gate route access by checking if current tenant has installed and enabled the app module
@@ -70,7 +70,7 @@ function requirePermission(permissionCode) {
   };
 }
 
-module.exports = {
+export {
   appGateMiddleware,
   requirePermission,
 };

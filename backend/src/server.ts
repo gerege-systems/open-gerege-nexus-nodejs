@@ -1,27 +1,28 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const { env } = require('./config/env');
-const { pool } = require('./db/index');
-const { runMigrations } = require('./db/migrate');
-const { seedDemoData } = require('./db/seed');
-const { syncCatalogToDatabase } = require('./platform/appcatalog');
-const { errorMiddleware } = require('./middleware/error.middleware');
-const { logger } = require('./utils/logger');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { pathToFileURL } from 'node:url';
+import { env } from './config/env.js';
+import { pool } from './db/index.js';
+import { runMigrations } from './db/migrate.js';
+import { seedDemoData } from './db/seed.js';
+import { syncCatalogToDatabase } from './platform/appcatalog.js';
+import { errorMiddleware } from './middleware/error.middleware.js';
+import { logger } from './utils/logger.js';
 
 // Import business modules
-const authRouter = require('./modules/auth/auth.router');
-const appstoreRouter = require('./modules/appstore/appstore.router');
-const contactsRouter = require('./modules/contacts/contacts.router');
-const productsRouter = require('./modules/products/products.router');
-const inventoryRouter = require('./modules/inventory/inventory.router');
-const billingRouter = require('./modules/billing/billing.router');
-const documentsRouter = require('./modules/documents/documents.router');
-const esignRouter = require('./modules/esign/esign.router');
-const govRouter = require('./modules/gov_services/gov_services.router');
-const aiRouter = require('./modules/ai/ai.router');
-const adminRouter = require('./modules/admin/admin.router');
-const integrationsRouter = require('./modules/integrations/integrations.router');
+import authRouter from './modules/auth/auth.router.js';
+import appstoreRouter from './modules/appstore/appstore.router.js';
+import contactsRouter from './modules/contacts/contacts.router.js';
+import productsRouter from './modules/products/products.router.js';
+import inventoryRouter from './modules/inventory/inventory.router.js';
+import billingRouter from './modules/billing/billing.router.js';
+import documentsRouter from './modules/documents/documents.router.js';
+import esignRouter from './modules/esign/esign.router.js';
+import govRouter from './modules/gov_services/gov_services.router.js';
+import aiRouter from './modules/ai/ai.router.js';
+import adminRouter from './modules/admin/admin.router.js';
+import integrationsRouter from './modules/integrations/integrations.router.js';
 
 const app = express();
 
@@ -94,7 +95,7 @@ app.use(errorMiddleware);
 // Server Startup
 async function startServer() {
   try {
-    logger.info('Starting Node.js Express CJS backend...');
+    logger.info('Starting Node.js Express TypeScript backend...');
 
     // 1. Run database migrations
     await runMigrations();
@@ -115,8 +116,8 @@ async function startServer() {
   }
 }
 
-if (require.main === module) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   startServer();
 }
 
-module.exports = app;
+export default app;

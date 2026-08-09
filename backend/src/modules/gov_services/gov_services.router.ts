@@ -1,7 +1,7 @@
-const { Router } = require('express');
-const { asyncHandler } = require('../../utils/asyncHandler');
-const { authMiddleware } = require('../../middleware/auth.middleware');
-const { appGateMiddleware } = require('../../middleware/rbac.middleware');
+import { Router } from 'express';
+import { asyncHandler } from '../../utils/asyncHandler.js';
+import { authMiddleware } from '../../middleware/auth.middleware.js';
+import { appGateMiddleware } from '../../middleware/rbac.middleware.js';
 
 const router = Router();
 
@@ -19,4 +19,4 @@ router.get('/gov/services', asyncHandler(async (req, res) => {
   });
 }));
 
-module.exports = router;
+export default router;

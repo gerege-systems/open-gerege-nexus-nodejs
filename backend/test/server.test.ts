@@ -1,7 +1,12 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { AddressInfo } from 'node:net';
+import app from '../src/server.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test('Environment and Server Config Smoke Test', () => {
   assert.ok(process.env.PORT === undefined || typeof process.env.PORT === 'string');
@@ -9,12 +14,11 @@ test('Environment and Server Config Smoke Test', () => {
 });
 
 test('HTTP health endpoints are public and return service metadata', async (t) => {
-  const app = require('../src/server');
   const server = app.listen(0, '127.0.0.1');
   t.after(() => server.close());
   await new Promise((resolve) => server.once('listening', resolve));
 
-  const { port } = server.address();
+  const { port } = server.address() as AddressInfo;
   for (const path of ['/health', '/api/v1/health']) {
     const response = await fetch(`http://127.0.0.1:${port}${path}`);
     assert.equal(response.status, 200, `${path} must not require authentication`);
@@ -31,18 +35,17 @@ test('Catalog App Validation Test', () => {
 });
 
 test('App installation supplies the required installed version', () => {
-  const router = fs.readFileSync(path.join(__dirname, '../src/modules/appstore/appstore.router.js'), 'utf8');
+  const router = fs.readFileSync(path.join(__dirname, '../src/modules/appstore/appstore.router.ts'), 'utf8');
   assert.match(router, /INSERT INTO app_installations \(tenant_id, app_id, installed_version, enabled\)/);
   assert.match(router, /COALESCE\(\$3, '1\.0\.0'\)/);
 });
 
 test('E-ID start endpoint matches the frontend contract', async (t) => {
-  const app = require('../src/server');
   const server = app.listen(0, '127.0.0.1');
   t.after(() => server.close());
   await new Promise((resolve) => server.once('listening', resolve));
 
-  const { port } = server.address();
+  const { port } = server.address() as AddressInfo;
   const response = await fetch(`http://127.0.0.1:${port}/api/v1/auth/eid/start`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

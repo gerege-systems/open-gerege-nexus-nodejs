@@ -3,8 +3,8 @@
  * High Performance, Low Footprint, Zero ORM Overhead
  */
 
-const pg = require('pg');
-const { env } = require('../config/env');
+import pg, { type PoolClient } from 'pg';
+import { env } from '../config/env.js';
 
 const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
@@ -20,7 +20,7 @@ pool.on('error', (err) => {
 /**
  * Execute query and return rows array
  */
-async function query(text, params) {
+async function query(text: string, params?: unknown[]): Promise<any[]> {
   const start = Date.now();
   const res = await pool.query(text, params);
   const duration = Date.now() - start;
@@ -33,7 +33,7 @@ async function query(text, params) {
 /**
  * Execute query and return single row or null
  */
-async function queryOne(text, params) {
+async function queryOne(text: string, params?: unknown[]): Promise<any | null> {
   const rows = await query(text, params);
   return rows.length > 0 ? rows[0] : null;
 }
@@ -41,7 +41,7 @@ async function queryOne(text, params) {
 /**
  * Execute query and return row count affected
  */
-async function execute(text, params) {
+async function execute(text: string, params?: unknown[]): Promise<number | null> {
   const res = await pool.query(text, params);
   return res.rowCount;
 }
@@ -49,7 +49,7 @@ async function execute(text, params) {
 /**
  * Execute callback within an isolated SQL transaction
  */
-async function withTransaction(callback) {
+async function withTransaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -64,7 +64,7 @@ async function withTransaction(callback) {
   }
 }
 
-module.exports = {
+export {
   pool,
   query,
   queryOne,

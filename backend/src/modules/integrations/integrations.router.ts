@@ -1,7 +1,7 @@
-const { Router } = require('express');
-const { query, queryOne } = require('../../db/index');
-const { asyncHandler } = require('../../utils/asyncHandler');
-const { authMiddleware, requireAdmin } = require('../../middleware/auth.middleware');
+import { Router } from 'express';
+import { query, queryOne } from '../../db/index.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
+import { authMiddleware, requireAdmin } from '../../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -87,4 +87,4 @@ router.post('/xyp/company', asyncHandler(async (req, res) => {
   });
 }));
 
-module.exports = router;
+export default router;

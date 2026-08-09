@@ -3,9 +3,10 @@
  * Reads and applies sorted .sql migrations sequentially (Extracts Goose Up directives)
  */
 
-const fs = require('node:fs');
-const path = require('node:path');
-const { pool } = require('./index');
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { pool } from './index.js';
 
 async function runMigrations() {
   const client = await pool.connect();
@@ -65,9 +66,9 @@ async function runMigrations() {
   }
 }
 
-module.exports = { runMigrations };
+export { runMigrations };
 
-if (require.main === module) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   runMigrations()
     .then(() => process.exit(0))
     .catch((err) => {

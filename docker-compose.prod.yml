@@ -1,4 +1,4 @@
-# Production stack for Gerege Nexus (Node.js & Express - CJS Edition).
+# Production stack for Gerege Nexus (Node.js, Express, and TypeScript ESM).
 # Dedicated domain: js.nexus.gerege.mn
 #
 # Container names, database names, volumes, and ports are isolated to run

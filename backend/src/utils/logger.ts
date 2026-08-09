@@ -19,4 +19,4 @@ const logger = {
   },
 };
 
-module.exports = { logger };
+export { logger };

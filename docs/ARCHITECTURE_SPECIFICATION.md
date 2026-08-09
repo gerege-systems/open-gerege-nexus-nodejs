@@ -18,15 +18,15 @@
 
 ### 1.1 Өндөр бүтээмжтэй модуль монолит
 
-- **Node.js 22 LTS & Express.js (CommonJS - CJS)** — Бизнес модулиуд (`contacts`, `products`, `inventory`, `billing`, `documents`, `developer_portal`, `esign`, `gov_services`, `ai`) нь Express рутерууд хэлбэрээр цэвэр, хөнгөн байдлаар зохион байгуулагдсан.
+- **Node.js 22 LTS, Express.js & TypeScript ESM** — Бизнес модулиуд (`contacts`, `products`, `inventory`, `billing`, `documents`, `developer_portal`, `esign`, `gov_services`, `ai`) нь Express рутерууд хэлбэрээр цэвэр, хөнгөн байдлаар зохион байгуулагдсан.
 - **Хүчирхэг бааз ба Connection Pool** — `pg` (node-postgres) native connection pool ашиглан PostgreSQL өгөгдлийн сантай шууд харьцана. 
 - **Тенант бүрийн апп стор** — модуль тус бүр тенантад идэвхтэй эсэхийг PostgreSQL (`app_installations`) болон Express `appGateMiddleware` динамикаар шийднэ.
 - **Каталогийн синк** — `catalog/apps.json` цорын ганц эх сурвалж бөгөөд `apps` хүснэгт ачаалал бүрт түүнээс автоматаар шинэчлэгдэнэ.
 
 ### 1.2 Аюулгүй байдал ба Хөнгөн Тэсвэрлэлт
 
-- **Zero-Dependency Rate Limiting** (`src/middleware/rateLimit.js`) — IP-д суурилсан санах ойн хөнгөн rate limiter.
-- **Auth & Session Store** (`src/middleware/auth.middleware.js`) — JWT болон PostgreSQL дээрх Session токен шалгагч.
+- **Zero-Dependency Rate Limiting** (`src/middleware/rateLimit.ts`) — IP-д суурилсан санах ойн хөнгөн rate limiter.
+- **Auth & Session Store** (`src/middleware/auth.middleware.ts`) — JWT болон PostgreSQL дээрх Session токен шалгагч.
 - **Pure Vanilla CSS Design System** — Фронтенд дээр ямар нэг Tailwind CSS ашиглахгүйгээр цэвэр CSS variables, theme switching (Light/Dark mode) болон хурдан ажиллах загварын системийг байгуулсан.
 
 ---
@@ -42,7 +42,7 @@
                 |                                                   |
       +-------------------+                               +-------------------+
       | Next.js Client    |                               | Node.js Express   |
-      | (Pure Vanilla CSS)|                               | (CommonJS - CJS)  |
+      | (Pure Vanilla CSS)|                               | (TypeScript ESM)  |
       +-------------------+                               +-------------------+
                 |                                                   |
         +-------+-------+                                   +-------+-------+

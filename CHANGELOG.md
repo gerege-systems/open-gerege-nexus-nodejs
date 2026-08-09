@@ -15,9 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-08-08
 
-### Migrated — Node.js Express (CommonJS) & Pure Vanilla CSS Stack
+### Migrated — Node.js Express TypeScript ESM & Pure Vanilla CSS Stack
 
-- **Node.js 22 LTS & Express.js Backend**: Converted platform backend to Node.js Express CommonJS (`src/server.js`) with native `pg` connection pool. Zero heavy ORMs for ultra-fast performance.
+- **Node.js 22 LTS & Express.js Backend**: Converted platform backend to Node.js Express TypeScript ESM (`src/server.ts`) with native `pg` connection pool. Zero heavy ORMs for ultra-fast performance.
 - **Pure Vanilla CSS Frontend Design System**: Removed Tailwind CSS dependencies and rebuilt frontend styling with a custom Vanilla CSS design system (`frontend/app/globals.css`).
 - **Zero-Dependency Testing & Security**: Native Node.js test runner (`node --test`), IP rate limiting middleware, and full PostgreSQL migration compatibility.
 

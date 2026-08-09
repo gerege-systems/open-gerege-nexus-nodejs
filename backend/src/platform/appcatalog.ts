@@ -1,7 +1,7 @@
-const fs = require('node:fs');
-const { env } = require('../config/env');
-const { pool } = require('../db/index');
-const { logger } = require('../utils/logger');
+import fs from 'node:fs';
+import { env } from '../config/env.js';
+import { pool } from '../db/index.js';
+import { logger } from '../utils/logger.js';
 
 async function syncCatalogToDatabase() {
   if (!fs.existsSync(env.CATALOG_PATH)) {
@@ -55,4 +55,4 @@ async function syncCatalogToDatabase() {
   }
 }
 
-module.exports = { syncCatalogToDatabase };
+export { syncCatalogToDatabase };

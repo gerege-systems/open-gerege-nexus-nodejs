@@ -18,7 +18,7 @@
 
 ### 1.1 Modular Monolith Core
 
-- **Node.js 22 LTS & Express.js (CommonJS - CJS)** — Business modules (`contacts`, `products`, `inventory`, `billing`, `documents`, `developer_portal`, `esign`, `gov_services`, `ai`) are cleanly organized as Express routers without bloated frameworks or heavy ORMs.
+- **Node.js 22 LTS, Express.js & TypeScript ESM** — Business modules (`contacts`, `products`, `inventory`, `billing`, `documents`, `developer_portal`, `esign`, `gov_services`, `ai`) are cleanly organized as Express routers without bloated frameworks or heavy ORMs.
 - **Native PostgreSQL Connection Pool** — Uses official `pg` (node-postgres) driver with parameterized raw queries for maximum throughput and low memory footprint.
 - **Tenant-Based App Store** — Dynamic module enablement per tenant controlled via PostgreSQL (`app_installations`) and Express `appGateMiddleware`.
 - **Catalog Synchronization** — `catalog/apps.json` acts as the single source of truth, synced to the `apps` database table on application boot.
@@ -41,7 +41,7 @@
                 |                                                   |
       +-------------------+                               +-------------------+
       | Next.js Client    |                               | Node.js Express   |
-      | (Pure Vanilla CSS)|                               | (CommonJS - CJS)  |
+      | (Pure Vanilla CSS)|                               | (TypeScript ESM)  |
       +-------------------+                               +-------------------+
                 |                                                   |
         +-------+-------+                                   +-------+-------+
